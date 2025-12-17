@@ -121,7 +121,9 @@ function App() {
         
         {/* HEADER CYBERPUNK */}
         <div className="header">
-          <div className="header-top" style={{ justifyContent: 'space-between', width: '100%' }}>
+          {/* CORREÇÃO AQUI: Adicionado display: 'flex' e alignItems: 'center' */}
+          <div className="header-top" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+            
             <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
               
               {/* LOGO MATRAKA BIRD */}
@@ -131,16 +133,14 @@ function App() {
                 border: '1px solid var(--neon-pink)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 boxShadow: '0 0 15px var(--neon-pink)',
-                clipPath: 'polygon(20% 0%, 80% 0%, 100% 20%, 100% 80%, 80% 100%, 20% 100%, 0% 80%, 0% 20%)'
+                clipPath: 'polygon(20% 0%, 80% 0%, 100% 20%, 100% 80%, 80% 100%, 20% 100%, 0% 80%, 0% 20%)',
+                flexShrink: 0 // Garante que o logo não amasse
               }}>
                 <svg width="40" height="40" viewBox="0 0 100 100" fill="none" stroke="var(--neon-cyan)" strokeWidth="3">
-                  {/* Cabeça e Bico */}
                   <path d="M20 40 L50 40 L80 60 L50 80 L30 70 Z" fill="rgba(0, 243, 255, 0.1)" />
                   <path d="M50 40 L70 20 L90 20" stroke="var(--neon-pink)" /> 
                   <circle cx="45" cy="55" r="3" fill="var(--neon-pink)" stroke="none"/>
-                  {/* Asa Digital */}
                   <path d="M20 40 L10 20 L40 20" stroke="var(--neon-purple)" strokeDasharray="4 2"/>
-                  {/* Olho cibernético */}
                   <path d="M40 55 L60 55" stroke="var(--neon-cyan)" />
                 </svg>
               </div>
@@ -164,23 +164,27 @@ function App() {
               </div>
             </div>
 
-            {/* BOTÃO DE CRIAR MACRO */}
+            {/* BOTÃO DE CRIAR MACRO (Agora vai ficar na direita corretamente) */}
             <button 
               onClick={() => setIsModalOpen(true)}
               className="btn-create"
               title="Nova Macro"
+              style={{ flexShrink: 0 }} // Garante que o botão não suma se a tela for pequena
             >
               +
             </button>
           </div>
 
-          <div className="search-box" style={{ marginTop: '2rem' }}>
+          <div className="search-box" style={{ marginTop: '2rem', position: 'relative' }}>
             <svg className="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
             <input 
               type="text" className="search-input" placeholder="SEARCH_DATABASE..."
               value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
             />
-            <span className="search-count" style={{top: '50%', transform: 'translateY(-50%)'}}>{filteredSnippets.length} RECORDS_FOUND</span>
+            {/* CORREÇÃO AQUI: Adicionado right: '1rem' para travar na direita */}
+            <span className="search-count" style={{position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--neon-cyan)'}}>
+              {filteredSnippets.length} RECORDS_FOUND
+            </span>
           </div>
         </div>
 
