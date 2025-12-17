@@ -126,22 +126,36 @@ function App() {
             
             <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
               
-              {/* LOGO MATRAKA BIRD */}
+{/* LOGO MATRAKA BIRD (Versão 2.0 - Falcão Geométrico) */}
               <div style={{ 
-                width: '60px', height: '60px', 
-                background: 'rgba(0,0,0,0.5)', 
-                border: '1px solid var(--neon-pink)',
+                width: '64px', height: '64px', 
+                background: 'rgba(5, 5, 10, 0.8)', 
+                border: '1px solid var(--neon-cyan)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: '0 0 15px var(--neon-pink)',
-                clipPath: 'polygon(20% 0%, 80% 0%, 100% 20%, 100% 80%, 80% 100%, 20% 100%, 0% 80%, 0% 20%)',
-                flexShrink: 0 // Garante que o logo não amasse
+                boxShadow: '0 0 20px rgba(0, 243, 255, 0.2)',
+                transform: 'skewX(-10deg)', // Dá uma inclinada "rápida"
+                position: 'relative'
               }}>
-                <svg width="40" height="40" viewBox="0 0 100 100" fill="none" stroke="var(--neon-cyan)" strokeWidth="3">
-                  <path d="M20 40 L50 40 L80 60 L50 80 L30 70 Z" fill="rgba(0, 243, 255, 0.1)" />
-                  <path d="M50 40 L70 20 L90 20" stroke="var(--neon-pink)" /> 
-                  <circle cx="45" cy="55" r="3" fill="var(--neon-pink)" stroke="none"/>
-                  <path d="M20 40 L10 20 L40 20" stroke="var(--neon-purple)" strokeDasharray="4 2"/>
-                  <path d="M40 55 L60 55" stroke="var(--neon-cyan)" />
+                {/* Detalhe decorativo no canto */}
+                <div style={{ position: 'absolute', top: '-1px', right: '-1px', width: '10px', height: '10px', background: 'var(--neon-pink)', clipPath: 'polygon(0 0, 100% 0, 100% 100%)' }}></div>
+                
+                <svg width="42" height="42" viewBox="0 0 100 100" fill="none" strokeWidth="2" style={{ transform: 'skewX(10deg)' }}>
+                  {/* Cabeça e Bico (Polígono Principal) */}
+                  <path 
+                    d="M30 30 L60 30 L90 50 L60 60 L60 80 L30 70 Z" 
+                    stroke="var(--neon-cyan)" 
+                    fill="rgba(0, 243, 255, 0.1)"
+                    strokeLinejoin="round"
+                  />
+                  
+                  {/* Olho Cibernético (Triângulo Rosa) */}
+                  <path d="M55 40 L65 40 L60 50 Z" fill="var(--neon-pink)" stroke="none" />
+                  
+                  {/* Linha de velocidade/Asa (Roxa) */}
+                  <path d="M10 50 L40 50 L50 60" stroke="var(--neon-purple)" strokeWidth="3" strokeLinecap="round" />
+                  
+                  {/* Detalhe Tech embaixo */}
+                  <path d="M30 85 L70 85" stroke="var(--neon-cyan)" strokeDasharray="2 4" />
                 </svg>
               </div>
 
