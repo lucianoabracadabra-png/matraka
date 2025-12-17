@@ -188,7 +188,7 @@ function App() {
 
         {!loading && Object.entries(groupedSnippets).map(([fileName, snippets]) => (
           <div key={fileName} className="file-group">
-            <div className="file-header" style={{ borderBottom: '1px solid var(--neon-purple)' }}>
+            <div className="file-header">
               <span className="file-title">{fileName}</span>
             </div>
             
