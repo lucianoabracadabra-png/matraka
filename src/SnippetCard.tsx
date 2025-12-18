@@ -209,4 +209,56 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
           </button>
 
           {!isOwner && (
-            <button onClick={handleClone} disabled={isCloning} style={{ background: 'rgba(0, 243, 255, 0.1)', border: '1px solid var(--neon-cyan)', color: 'var(--neon-cyan)', cursor: 'pointer', padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem', fontFamily: 'JetBrains Mono', display: 'flex', alignItems: 'center',
+            <button 
+              onClick={handleClone} 
+              disabled={isCloning} 
+              style={{ 
+                background: 'rgba(0, 243, 255, 0.1)', 
+                border: '1px solid var(--neon-cyan)', 
+                color: 'var(--neon-cyan)', 
+                cursor: 'pointer', 
+                padding: '4px 8px', 
+                borderRadius: '4px', 
+                fontSize: '0.75rem', 
+                fontFamily: 'JetBrains Mono', 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '4px' 
+              }} 
+              title="FORK"
+            >
+              {isCloning ? '...' : <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2-2v1"></path></svg></>}
+            </button>
+          )}
+
+          <button onClick={handleToggleLike} style={{ background: 'rgba(30, 41, 59, 0.5)', border: `1px solid ${isLiked ? '#ec4899' : '#475569'}`, color: isLiked ? '#ec4899' : '#94a3b8', cursor: 'pointer', padding: '4px 8px', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem' }}>
+            <span>{isLiked ? '❤️' : '🤍'}</span><span style={{ fontFamily: 'JetBrains Mono' }}>{likesCount}</span>
+          </button>
+
+          {isOwner && (
+            <>
+              <button onClick={() => onEdit(snippet)} style={{ background: 'rgba(255, 255, 0, 0.1)', border: '1px solid rgba(255, 255, 0, 0.5)', color: '#ffff00', cursor: 'pointer', padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem' }} title="EDIT">
+                ✎
+              </button>
+              
+              <button 
+                onClick={handleDeleteClick} 
+                className="btn-delete-neon"
+                style={{ 
+                  borderRadius: '4px', padding: '4px 8px', fontSize: '0.75rem', 
+                  fontFamily: 'JetBrains Mono', cursor: 'pointer',
+                  fontWeight: deleteConfirm ? 'bold' : 'normal',
+                  background: deleteConfirm ? 'var(--neon-pink)' : undefined,
+                  color: deleteConfirm ? '#000' : undefined
+                }} 
+                title="DELETE"
+              >
+                {deleteConfirm ? 'CONFIRM?' : '✕'}
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

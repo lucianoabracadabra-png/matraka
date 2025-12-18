@@ -1,4 +1,3 @@
-// ... (imports mantidos iguais) ...
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from './supabaseClient';
 import { Auth } from './Auth';
@@ -41,7 +40,6 @@ function App() {
   const [isAddToKitOpen, setIsAddToKitOpen] = useState(false);
   const [macroIdToAdd, setMacroIdToAdd] = useState<string | null>(null);
 
-  // ... (useEffect de Sessão e fetchUserProfile mantidos iguais) ...
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -66,7 +64,6 @@ function App() {
     addToast('SESSÃO ENCERRADA', 'info');
   };
 
-  // ... (fetchMacros mantido igual) ...
   const fetchMacros = useCallback(async () => {
     if (!session) return;
     setLoading(true);
@@ -82,7 +79,7 @@ function App() {
     if (macrosError) {
       addToast('FALHA DE CONEXÃO', 'error');
     } else if (macrosData) {
-      const myLikedIds = new Set<string>(); // Mock se não usar likes na query
+      const myLikedIds = new Set<string>();
 
       const mappedSnippets: Snippet[] = macrosData.map((macro: any) => ({
         id: macro.id,
@@ -116,7 +113,6 @@ function App() {
     fetchMacros();
   }, [fetchMacros]);
 
-  // ... (Actions e Filtros mantidos iguais) ...
   const handleEdit = (snippet: Snippet) => { setMacroToEdit(snippet); setIsModalOpen(true); };
   const handleCreateNew = () => { setMacroToEdit(null); setIsModalOpen(true); };
   
@@ -142,7 +138,10 @@ function App() {
     }
   };
 
-  const isMacroInAnyKit = (macroId: string) => Object.values(kitItems).some(set => set.has(macroId));
+  const isMacroInAnyKit = (macroId: string) => {
+    return Object.values(kitItems).some(set => set.has(macroId));
+  };
+
   const getMacroKits = (macroId: string | null) => {
     if (!macroId) return [];
     return Object.keys(kitItems).filter(kitId => kitItems[kitId].has(macroId));
@@ -192,7 +191,6 @@ function App() {
 
       <div className="container">
         
-        {/* HEADER */}
         <div className="header">
           <div className="header-top" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
             <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
@@ -211,7 +209,7 @@ function App() {
                 <h1 className="title" style={{ margin: 0, fontSize: '3rem', lineHeight: 1 }}>MATRAKA</h1>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '0.5rem' }}>
                     <span className="subtitle" style={{fontFamily:'JetBrains Mono', color: '#fff'}}>
-                      USER: <span style={{color: '#9ca3af', fontWeight:'bold'}}>{myUsername}</span> {/* COR MELHORADA */}
+                      USER: <span style={{color: '#9ca3af', fontWeight:'bold'}}>{myUsername}</span>
                     </span>
                     <button onClick={handleLogout} className="btn-neon" style={{ fontSize: '0.7rem', padding: '2px 8px' }}>LOGOUT</button>
                 </div>
@@ -224,7 +222,6 @@ function App() {
              <input type="text" className="search-input" placeholder="SEARCH_DATABASE..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
           </div>
 
-          {/* MENUS E TOGGLES */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginTop: '1.5rem', borderBottom: '1px solid rgba(0, 243, 255, 0.2)', paddingBottom: '0.5rem' }}>
             <div style={{ display: 'flex', gap: '1rem', overflowX: 'auto' }}>
               {['ALL', 'MINE', 'FAVS', 'KITS'].map((tab) => {
@@ -258,7 +255,6 @@ function App() {
           )}
         </div>
 
-        {/* LOADING GLITCH */}
         {loading && (
           <div className="loading" style={{ flexDirection: 'column', gap: '1rem' }}>
             <div className="glitch-text" data-text="LOADING_SYSTEM...">LOADING_SYSTEM...</div>

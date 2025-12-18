@@ -95,7 +95,6 @@ export function AddToKitModal({ isOpen, onClose, userId, macroId, macroKits = []
                 onClick={() => handleToggleKit(kit.id)}
                 disabled={loading}
                 style={{
-                  // VERDE NEON para itens selecionados (Consistência com o Card)
                   background: isAdded ? 'rgba(0, 255, 0, 0.15)' : 'rgba(0, 0, 0, 0.3)',
                   border: isAdded ? '1px solid #00ff00' : '1px solid #444',
                   color: isAdded ? '#00ff00' : '#888',
@@ -139,7 +138,6 @@ export function AddToKitModal({ isOpen, onClose, userId, macroId, macroKits = []
               placeholder="NOME DO KIT..."
               style={{ padding: '10px', fontFamily:'JetBrains Mono', fontSize:'0.8rem' }}
             />
-            {/* Botão com classe cyber-btn-main para ter o efeito glitch */}
             <button 
               onClick={handleCreateKit}
               disabled={loading || !newKitName}
