@@ -2,27 +2,28 @@ import { useState, useEffect } from 'react';
 import { supabase } from './supabaseClient';
 import { useToast } from './ToastContext';
 
+// --- ATUALIZAÇÃO DA INTERFACE DE PROPS ---
 interface Props {
   snippet: any;
   userId: string;
   onDelete: () => void;
   onEdit: (snippet: any) => void;
+  // Novas props adicionadas aqui:
+  onProcessVariables: (snippet: any, variables: string[]) => void;
+  onAddToKit: (id: string) => void;
   initialLikes: number;
   initialLiked: boolean;
-  onAddToKit: (id: string) => void; 
 }
 
-export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariables, onAddToKit, initialLikes, initialLiked }: Props) {  const { addToast } = useToast();
+export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariables, onAddToKit, initialLikes, initialLiked }: Props) {
+  const { addToast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isCloning, setIsCloning] = useState(false);
   const [likesCount, setLikesCount] = useState(initialLikes);
   const [isLiked, setIsLiked] = useState(initialLiked);
   const [isLikeLoading, setIsLikeLoading] = useState(false);
-
-  // --- NOVO: Estado para confirmação de Delete ---
   const [deleteConfirm, setDeleteConfirm] = useState(false);
 
-  // Reseta o botão de confirmar após 3 segundos se o usuário não clicar
   useEffect(() => {
     if (deleteConfirm) {
       const timer = setTimeout(() => setDeleteConfirm(false), 3000);
@@ -38,29 +39,24 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
     return txt.value;
   };
 
-const applyDynamicTranslations = (text: string) => {
+  const applyDynamicTranslations = (text: string) => {
     if (!text) return '';
     let newText = text;
     
-    // --- TAGS COMPLEXAS (LEGADO) ---
-    newText = newText.replace(/\{site:\s*text;\s*page=[^;]+;\s*selector=\.customer-name\}/gi, '<span class="macro-tag tag-client">[Cliente]</span>');
-    // ... (mantenha as outras regex antigas se quiser) ...
-
-    // --- NOVAS TAGS SIMPLIFICADAS (BARRA DE FERRAMENTAS) ---
+    // Formatação visual das tags
     newText = newText.replace(/\{client\}/gi, '<span class="macro-tag tag-client">[Cliente]</span>');
     newText = newText.replace(/\{agent\}/gi, '<span class="macro-tag tag-theme">[Agente]</span>');
     newText = newText.replace(/\{cursor\}/gi, '<span class="macro-tag tag-cursor">[Cursor]</span>');
     newText = newText.replace(/\{clipboard\}/gi, '<span class="macro-tag tag-clipboard">[Ctrl+V]</span>');
-    newText = newText.replace(/\{date\}/gi, '<span class="macro-tag tag-wait">[Data Hoje]</span>');
-    newText = newText.replace(/\{key:enter\}/gi, '<span class="macro-tag tag-wait">[Enter]</span>'); // Opcional, se não quebrar linha
+    newText = newText.replace(/\{date\}/gi, '<span class="macro-tag tag-wait">[Data]</span>');
+    newText = newText.replace(/\{key:enter\}/gi, '<span class="macro-tag tag-wait">[Enter]</span>');
+    newText = newText.replace(/\{wait:\s*(\w+)\}/gi, '<span class="macro-tag tag-wait">[Wait $1]</span>');
     
-    // Regex melhorada para o Wait (aceita {wait:5s} ou {wait: delay=5})
-    newText = newText.replace(/\{wait:\s*(\w+)\}/gi, '<span class="macro-tag tag-wait">[Aguarde $1]</span>');
-    newText = newText.replace(/\{wait:\s*delay=\+?(\w+)\}/gi, '<span class="macro-tag tag-wait">[Aguarde $1]</span>');
+    // NOVA TAG VISUAL: {input:nome} vira [Input: NOME] em rosa
+    newText = newText.replace(/\{input:([a-zA-Z0-9_\s]+)\}/gi, '<span class="macro-tag" style="border-color:var(--neon-pink); color:var(--neon-pink)">[Input: $1]</span>');
 
     return newText;
   };
-  
 
   const formatAsChat = (rawText: string) => {
     if (!rawText) return [];
@@ -77,6 +73,19 @@ const applyDynamicTranslations = (text: string) => {
   
   const handleCopy = () => {
     const textToCopy = decodeHtml(snippet.text);
+
+    // 1. DETECÇÃO DE VARIÁVEIS
+    const regex = /\{input:([a-zA-Z0-9_\s]+)\}/gi;
+    const matches = Array.from(textToCopy.matchAll(regex));
+
+    if (matches.length > 0) {
+      // Se achou variáveis, chama o Modal no App.tsx
+      const variables = [...new Set(matches.map(m => m[1]))];
+      onProcessVariables(snippet, variables);
+      return; // Para por aqui
+    }
+
+    // 2. Se não tem variáveis, copia direto
     navigator.clipboard.writeText(textToCopy)
       .then(() => addToast('COPIADO PARA O CLIPBOARD!', 'success'))
       .catch(() => addToast('ERRO AO COPIAR', 'error'));
@@ -106,8 +115,6 @@ const applyDynamicTranslations = (text: string) => {
 
   const handleClone = async () => {
     if (isCloning) return;
-    // Aqui ainda mantemos o confirm nativo por ser uma ação de criação complexa? 
-    // Ou podemos usar o mesmo esquema de clique duplo. Vamos manter simples por enquanto.
     setIsCloning(true);
     const { error } = await supabase.from('macros').insert({
       user_id: userId,
@@ -128,15 +135,11 @@ const applyDynamicTranslations = (text: string) => {
     setIsCloning(false);
   };
 
-  // --- LÓGICA DE DELETAR COM BOTÃO DUPLO ---
   const handleDeleteClick = async () => {
-    // 1. Se ainda não confirmou, ativa o modo de confirmação e para por aqui
     if (!deleteConfirm) {
       setDeleteConfirm(true);
       return; 
     }
-
-    // 2. Se já estava confirmando (clicou pela 2ª vez), deleta de verdade
     setIsDeleting(true);
     const { error } = await supabase.from('macros').delete().eq('id', snippet.id);
     if (error) {
@@ -168,7 +171,6 @@ const applyDynamicTranslations = (text: string) => {
 
   return (
     <div className={`snippet-card ${cardClass}`} style={{ opacity: isDeleting ? 0.5 : 1, display: 'flex', flexDirection: 'column', height: '100%' }}>
-      {/* HEADER CARD */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
         <h3 className="snippet-name" style={{ margin: 0 }}>{snippet.name}</h3>
         {snippet.shortcut && <span className="snippet-shortcut">{snippet.shortcut}</span>}
@@ -184,7 +186,6 @@ const applyDynamicTranslations = (text: string) => {
         DEV_ID: <span style={{ color: '#94a3b8' }}>{snippet.author}</span>
       </div>
 
-      {/* BODY CLICÁVEL (COPIAR) */}
       <div 
         className="snippet-content" 
         style={{ flex: 1, marginBottom: '1rem', cursor: 'pointer' }}
@@ -201,43 +202,47 @@ const applyDynamicTranslations = (text: string) => {
         </div>
       </div>
 
-      {/* FOOTER */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.1)', marginTop: 'auto' }}>
         <span style={{ fontFamily: 'monospace', fontSize: '0.7rem', color: '#64748b' }}>{formattedDate}</span>
         
         <div style={{ display: 'flex', gap: '0.5rem' }}>
-          {/* FORK */}
+          
+          {/* BOTÃO ADD TO KIT (NOVO) */}
+          <button 
+            onClick={() => onAddToKit(snippet.id)}
+            style={{ 
+              background: 'rgba(255, 255, 255, 0.05)', border: '1px solid #666', 
+              color: '#fff', cursor: 'pointer', padding: '4px 8px', borderRadius: '4px', 
+              fontSize: '0.75rem', fontFamily: 'JetBrains Mono' 
+            }} 
+            title="Adicionar a um Kit"
+          >
+            +KIT
+          </button>
+
           {!isOwner && (
             <button onClick={handleClone} disabled={isCloning} style={{ background: 'rgba(0, 243, 255, 0.1)', border: '1px solid var(--neon-cyan)', color: 'var(--neon-cyan)', cursor: 'pointer', padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem', fontFamily: 'JetBrains Mono', display: 'flex', alignItems: 'center', gap: '4px' }} title="FORK">
               {isCloning ? '...' : <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2-2v1"></path></svg></>}
             </button>
           )}
 
-          {/* LIKE */}
           <button onClick={handleToggleLike} style={{ background: 'rgba(30, 41, 59, 0.5)', border: `1px solid ${isLiked ? '#ec4899' : '#475569'}`, color: isLiked ? '#ec4899' : '#94a3b8', cursor: 'pointer', padding: '4px 8px', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem' }}>
             <span>{isLiked ? '❤️' : '🤍'}</span><span style={{ fontFamily: 'JetBrains Mono' }}>{likesCount}</span>
           </button>
 
-          {/* EDIT & DELETE (Só para donos) */}
           {isOwner && (
             <>
               <button onClick={() => onEdit(snippet)} style={{ background: 'rgba(255, 255, 0, 0.1)', border: '1px solid rgba(255, 255, 0, 0.5)', color: '#ffff00', cursor: 'pointer', padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem' }} title="EDIT">
                 ✎
               </button>
               
-              {/* BOTÃO DE DELETAR INTELIGENTE */}
               <button 
                 onClick={handleDeleteClick} 
                 style={{ 
                   background: deleteConfirm ? 'rgba(255, 0, 0, 0.3)' : 'rgba(255, 0, 0, 0.1)', 
                   border: deleteConfirm ? '1px solid #ff0000' : '1px solid rgba(255, 0, 0, 0.5)', 
                   color: deleteConfirm ? '#fff' : '#ff5555', 
-                  cursor: 'pointer', 
-                  padding: '4px 8px', 
-                  borderRadius: '4px', 
-                  fontSize: '0.75rem',
-                  fontWeight: deleteConfirm ? 'bold' : 'normal',
-                  transition: 'all 0.2s'
+                  cursor: 'pointer', padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: deleteConfirm ? 'bold' : 'normal', transition: 'all 0.2s'
                 }} 
                 title="DELETE"
               >
