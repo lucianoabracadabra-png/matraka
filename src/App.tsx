@@ -4,11 +4,10 @@ import { Auth } from './Auth';
 import { CreateMacroModal } from './CreateMacroModal';
 import { SnippetCard } from './SnippetCard';
 import { ProfileModal } from './ProfileModal';
-import { useToast } from './ToastContext'; // <--- 1. Importar
+import { useToast } from './ToastContext';
 import type { Session } from '@supabase/supabase-js';
 import './index.css';
 
-// ... (Interface Snippet continua igual) ...
 interface Snippet {
   id: string;
   user_id: string;
@@ -25,13 +24,14 @@ interface Snippet {
 }
 
 function App() {
-  const { addToast } = useToast(); // <--- 2. Instanciar Hook
+  const { addToast } = useToast();
   
-  // NAVEGAÇÃO
+  // NAVEGAÇÃO & FILTROS
   const [activeTab, setActiveTab] = useState('ALL'); 
   const [showAI, setShowAI] = useState(true);
   const [showText, setShowText] = useState(true);
 
+  // DADOS
   const [session, setSession] = useState<Session | null>(null);
   const [allSnippets, setAllSnippets] = useState<Snippet[]>([]);
   const [filteredSnippets, setFilteredSnippets] = useState<Snippet[]>([]);
@@ -47,11 +47,13 @@ function App() {
 
   // --- 1. SESSÃO ---
   useEffect(() => {
+    // Verifica sessão atual
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session) fetchUserProfile(session.user.id);
     });
 
+    // Escuta mudanças (Login/Logout externos)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       if (session) fetchUserProfile(session.user.id);
@@ -64,6 +66,21 @@ function App() {
     const { data } = await supabase.from('profiles').select('username, email').eq('id', userId).single();
     if (data) {
       setMyUsername(data.username || data.email?.split('@')[0] || 'Unknown');
+    }
+  };
+
+  // --- FUNÇÃO DE LOGOUT BLINDADA ---
+  const handleLogout = async () => {
+    try {
+      // 1. Tenta avisar o Supabase
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error('Erro ao sair:', error);
+    } finally {
+      // 2. FORÇA a saída visualmente, mesmo se der erro acima
+      setSession(null);
+      setAllSnippets([]); // Limpa dados da memória por segurança
+      addToast('SESSÃO ENCERRADA', 'info');
     }
   };
 
@@ -82,10 +99,9 @@ function App() {
       .select('macro_id')
       .eq('user_id', session.user.id);
 
-    // 3. TRATAMENTO DE ERRO COM TOAST
     if (macrosError || likesError) {
       console.error('Erro:', macrosError || likesError);
-      addToast('FALHA DE CONEXÃO COM O SISTEMA', 'error'); // <--- Aviso visual para o usuário
+      addToast('FALHA DE CONEXÃO COM O SISTEMA', 'error');
     } else if (macrosData) {
       const myLikedIds = new Set(myLikesData?.map((l: any) => l.macro_id) || []);
 
@@ -108,7 +124,7 @@ function App() {
       setFilteredSnippets(mappedSnippets);
     }
     setLoading(false);
-  }, [session, addToast]); // Inclui addToast nas dependências
+  }, [session, addToast]);
 
   useEffect(() => {
     fetchMacros();
@@ -155,6 +171,7 @@ function App() {
     setFilteredSnippets(filtered);
   }, [searchTerm, allSnippets, activeTab, showAI, showText, session]);
 
+  // Agrupamento
   const groupedSnippets = filteredSnippets.reduce((groups, snippet) => {
     const file = snippet.sourceFile;
     if (!groups[file]) groups[file] = [];
@@ -203,7 +220,16 @@ function App() {
                     SYSTEM.USER: <span style={{color: '#fff', fontWeight: 'bold'}}>{myUsername}</span>
                   </p>
                   <button onClick={() => setIsProfileOpen(true)} className="btn-neon" style={{ fontSize: '0.7rem', padding: '2px 8px', borderColor: 'var(--neon-purple)', color: 'var(--neon-purple)' }}>SETUP_ID</button>
-                  <button onClick={() => supabase.auth.signOut()} className="btn-neon" style={{ fontSize: '0.7rem', padding: '2px 8px' }}>LOGOUT</button>
+                  
+                  {/* --- BOTÃO DE LOGOUT CORRIGIDO --- */}
+                  <button 
+                    onClick={handleLogout} 
+                    className="btn-neon" 
+                    style={{ fontSize: '0.7rem', padding: '2px 8px' }}
+                  >
+                    LOGOUT
+                  </button>
+                  
                 </div>
               </div>
             </div>
