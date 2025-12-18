@@ -277,3 +277,137 @@ body {
   margin: 0 auto 1rem;
   box-shadow: 0 0 15px var(--neon-cyan);
 }
+
+/* --- CYBERPUNK UI KIT --- */
+
+/* 1. O Modal Cortado */
+.cyber-modal {
+  background: rgba(5, 5, 10, 0.95);
+  border: 1px solid var(--neon-cyan);
+  box-shadow: 0 0 30px rgba(0, 243, 255, 0.1);
+  clip-path: polygon(
+    0 0, 
+    100% 0, 
+    100% 90%, 
+    95% 100%, 
+    0 100%
+  ); /* Corta o canto inferior direito */
+  position: relative;
+}
+
+/* Linha decorativa no topo do modal */
+.cyber-modal::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--neon-cyan), var(--neon-pink), var(--neon-purple));
+}
+
+/* 2. Inputs Futuristas (Só a linha de baixo) */
+.cyber-input {
+  background: rgba(255, 255, 255, 0.03);
+  border: none;
+  border-bottom: 2px solid #333;
+  color: #fff;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.9rem;
+  padding: 1rem;
+  width: 100%;
+  transition: all 0.3s ease;
+  outline: none;
+}
+
+.cyber-input:focus {
+  background: rgba(0, 243, 255, 0.05);
+  border-bottom-color: var(--neon-cyan);
+  box-shadow: 0 10px 20px -10px rgba(0, 243, 255, 0.2);
+  letter-spacing: 1px; /* Efeito legal: expande o texto ao digitar */
+}
+
+.cyber-textarea {
+  min-height: 200px;
+  resize: vertical;
+}
+
+/* 3. Botão Principal com Efeito Glitch/Scan */
+.cyber-btn-main {
+  background: var(--neon-cyan);
+  color: #000;
+  border: none;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 900;
+  font-size: 1rem;
+  padding: 1rem;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s;
+  clip-path: polygon(0 0, 100% 0, 100% 80%, 95% 100%, 0 100%);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+/* Efeito de Scanline passando pelo botão */
+.cyber-btn-main::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 100%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
+  transition: 0.5s;
+}
+
+.cyber-btn-main:hover::after {
+  left: 100%; /* Passa o brilho correndo */
+}
+
+.cyber-btn-main:hover {
+  background: #fff;
+  box-shadow: 0 0 20px var(--neon-cyan);
+  text-shadow: 2px 0 var(--neon-pink); /* Efeito 3D falso */
+  transform: translateY(-2px);
+}
+
+.cyber-btn-main:active {
+  transform: translateY(1px);
+}
+
+/* 4. Seletores de Tipo (Radio Buttons Estilizados) */
+.type-selector {
+  display: flex;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 0.25rem;
+  border-radius: 4px;
+}
+
+.type-option {
+  flex: 1;
+  text-align: center;
+  padding: 0.5rem;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-family: 'JetBrains Mono';
+  color: #666;
+  border: 1px solid transparent;
+  transition: all 0.3s;
+}
+
+.type-option.active {
+  background: rgba(0, 243, 255, 0.1);
+  color: var(--neon-cyan);
+  border-color: var(--neon-cyan);
+  box-shadow: 0 0 10px rgba(0, 243, 255, 0.1);
+  font-weight: bold;
+}
+
+/* Label Flutuante Tech */
+.cyber-label {
+  font-size: 0.7rem;
+  color: var(--neon-purple);
+  margin-bottom: 0.2rem;
+  display: block;
+  font-family: 'JetBrains Mono';
+  opacity: 0.8;
+}

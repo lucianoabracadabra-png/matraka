@@ -7,18 +7,20 @@ interface Props {
   onClose: () => void;
   onSuccess: () => void;
   userId: string;
-  macroToEdit?: any | null; // <--- NOVO PROP: A macro que vamos editar
+  macroToEdit?: any | null;
 }
 
 export function CreateMacroModal({ isOpen, onClose, onSuccess, userId, macroToEdit }: Props) {
   const { addToast } = useToast();
   const [loading, setLoading] = useState(false);
+  
+  // States do formulário
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [shortcut, setShortcut] = useState('');
   const [appCategory, setAppCategory] = useState('TEXT');
 
-  // Se receber uma macro para editar, preenche os campos
+  // Preenche dados se for edição
   useEffect(() => {
     if (macroToEdit) {
       setTitle(macroToEdit.name);
@@ -26,7 +28,6 @@ export function CreateMacroModal({ isOpen, onClose, onSuccess, userId, macroToEd
       setShortcut(macroToEdit.shortcut || '');
       setAppCategory(macroToEdit.app || 'TEXT');
     } else {
-      // Limpa se for criar nova
       setTitle('');
       setContent('');
       setShortcut('');
@@ -36,60 +37,50 @@ export function CreateMacroModal({ isOpen, onClose, onSuccess, userId, macroToEd
 
   const handleSave = async () => {
     if (!title || !content) {
-      addToast('PREENCHA O NOME E O CONTEÚDO', 'error');
+      addToast('DADOS INCOMPLETOS: NOME E CONTEÚDO SÃO OBRIGATÓRIOS', 'error');
       return;
     }
 
     setLoading(true);
-
     let error;
 
+    const payload = {
+      title,
+      content,
+      shortcut,
+      app_category: appCategory,
+      updated_at: new Date()
+    };
+
     if (macroToEdit) {
-      // --- MODO EDIÇÃO (UPDATE) ---
+      // UPDATE
       const { error: updateError } = await supabase
         .from('macros')
-        .update({
-          title,
-          content,
-          shortcut,
-          app_category: appCategory,
-          updated_at: new Date()
-        })
+        .update(payload)
         .eq('id', macroToEdit.id)
-        .eq('user_id', userId); // Garante que só edita se for sua
-      
+        .eq('user_id', userId);
       error = updateError;
     } else {
-      // --- MODO CRIAÇÃO (INSERT) ---
+      // INSERT
       const { error: insertError } = await supabase
         .from('macros')
         .insert({
+          ...payload,
           user_id: userId,
-          title,
-          content,
-          shortcut,
-          app_category: appCategory,
           type: 'text',
           is_public: false
         });
-      
       error = insertError;
     }
 
     setLoading(false);
 
     if (error) {
-      addToast('ERRO AO SALVAR: ' + error.message, 'error');
+      addToast('FALHA NA OPERAÇÃO: ' + error.message, 'error');
     } else {
-      addToast(macroToEdit ? 'MACRO ATUALIZADA!' : 'MACRO CRIADA!', 'success');
+      addToast(macroToEdit ? 'SISTEMA ATUALIZADO' : 'NOVA MACRO COMPILADA', 'success');
       onSuccess();
       onClose();
-      // Limpa campos
-      if (!macroToEdit) {
-        setTitle('');
-        setContent('');
-        setShortcut('');
-      }
     }
   };
 
@@ -97,59 +88,103 @@ export function CreateMacroModal({ isOpen, onClose, onSuccess, userId, macroToEd
 
   return (
     <div style={{
-      position: 'fixed', inset: 0, zIndex: 50,
+      position: 'fixed', inset: 0, zIndex: 200,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      backdropFilter: 'blur(5px)', backgroundColor: 'rgba(0, 0, 0, 0.7)'
+      backdropFilter: 'blur(8px)', backgroundColor: 'rgba(0, 0, 0, 0.8)'
     }}>
-      <div className="snippet-card" style={{ width: '100%', maxWidth: '500px', border: '1px solid var(--neon-cyan)', background: '#05050a' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-          <h2 className="title" style={{ fontSize: '1.5rem', margin: 0, color: '#fff' }}>
-            {macroToEdit ? 'EDIT_MACRO' : 'NEW_MACRO'}
-          </h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--neon-pink)', cursor: 'pointer', fontSize: '1.2rem' }}>[X]</button>
+      {/* CONTAINER PRINCIPAL: Classe cyber-modal faz a mágica da borda cortada */}
+      <div className="cyber-modal" style={{ width: '90%', maxWidth: '600px', padding: '2rem' }}>
+        
+        {/* HEADER DO MODAL */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+          <div>
+            <span style={{ fontSize: '0.7rem', color: 'var(--neon-purple)', fontFamily: 'JetBrains Mono' }}>
+              {macroToEdit ? 'MODE: UPDATE_EXISTING' : 'MODE: CREATE_NEW'}
+            </span>
+            <h2 className="title" style={{ fontSize: '1.8rem', margin: 0, color: '#fff', textShadow: '0 0 10px rgba(255,255,255,0.3)' }}>
+              {macroToEdit ? 'EDIT_PROTOCOL' : 'NEW_PROTOCOL'}
+            </h2>
+          </div>
+          <button 
+            onClick={onClose} 
+            style={{ 
+              background: 'transparent', border: '1px solid var(--neon-pink)', 
+              color: 'var(--neon-pink)', width: '30px', height: '30px', 
+              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
+            }}
+          >
+            ✕
+          </button>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <input 
-            className="search-input" 
-            placeholder="NOME DA MACRO (Ex: Saudação)" 
-            value={title} onChange={e => setTitle(e.target.value)}
-          />
+        {/* FORMULÁRIO */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           
-          <div style={{ display: 'flex', gap: '1rem' }}>
+          {/* NOME DA MACRO */}
+          <div>
+            <label className="cyber-label">PROTOCOL_NAME</label>
             <input 
-              className="search-input" 
-              placeholder="ATALHO (Ex: /oi)" 
-              value={shortcut} onChange={e => setShortcut(e.target.value)}
-              style={{ flex: 1 }}
+              className="cyber-input" 
+              placeholder="Ex: Resposta Padrão Cliente" 
+              value={title} onChange={e => setTitle(e.target.value)}
+              autoFocus
             />
-            <select 
-              className="search-input" 
-              value={appCategory} onChange={e => setAppCategory(e.target.value)}
-              style={{ width: '120px' }}
-            >
-              <option value="TEXT">TEXT</option>
-              <option value="AI">AI</option>
-              <option value="CODE">CODE</option>
-            </select>
+          </div>
+          
+          {/* GRID: ATALHO + TIPO */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div>
+              <label className="cyber-label">SHORTCUT_KEY</label>
+              <input 
+                className="cyber-input" 
+                placeholder="Ex: /oi" 
+                value={shortcut} onChange={e => setShortcut(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label className="cyber-label">CATEGORY_TYPE</label>
+              {/* Seletor Customizado em vez de <select> */}
+              <div className="type-selector">
+                {['TEXT', 'AI', 'CODE'].map((type) => (
+                  <div 
+                    key={type}
+                    className={`type-option ${appCategory === type ? 'active' : ''}`}
+                    onClick={() => setAppCategory(type)}
+                  >
+                    {type}
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
-          <textarea 
-            className="search-input" 
-            placeholder="CONTEÚDO DA MACRO..." 
-            rows={8}
-            value={content} onChange={e => setContent(e.target.value)}
-            style={{ fontFamily: 'monospace' }}
-          />
+          {/* CONTEÚDO */}
+          <div>
+            <label className="cyber-label">DATA_CONTENT</label>
+            <textarea 
+              className="cyber-input cyber-textarea" 
+              placeholder="Digite o texto, prompt ou código aqui..." 
+              value={content} onChange={e => setContent(e.target.value)}
+            />
+          </div>
 
-          <button 
-            onClick={handleSave} 
-            disabled={loading}
-            className="btn-create" 
-            style={{ width: '100%', marginTop: '1rem' }}
-          >
-            {loading ? 'SAVING...' : (macroToEdit ? 'UPDATE_SYSTEM' : 'COMPILE_MACRO')}
-          </button>
+          {/* RODAPÉ DO MODAL */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem' }}>
+            <span style={{ fontSize: '0.7rem', color: '#666', fontFamily: 'JetBrains Mono' }}>
+              STATUS: {loading ? 'UPLOADING...' : 'READY'}
+            </span>
+
+            <button 
+              onClick={handleSave} 
+              disabled={loading}
+              className="cyber-btn-main"
+              style={{ minWidth: '150px' }}
+            >
+              {loading ? 'PROCESSING...' : (macroToEdit ? 'SAVE_CHANGES' : 'COMPILE')}
+            </button>
+          </div>
+
         </div>
       </div>
     </div>
