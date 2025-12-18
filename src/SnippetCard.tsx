@@ -11,7 +11,7 @@ interface Props {
   onAddToKit: (id: string) => void;
   initialLikes: number;
   initialLiked: boolean;
-  isInKit?: boolean; // <--- NOVA PROP
+  isInKit?: boolean;
 }
 
 export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariables, onAddToKit, initialLikes, initialLiked, isInKit }: Props) {
@@ -193,11 +193,9 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
         
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           
-          {/* BOTÃO KIT DINÂMICO */}
           <button 
             onClick={() => onAddToKit(snippet.id)}
             style={{ 
-              // Se estiver no kit: Fundo verde suave + borda verde neon
               background: isInKit ? 'rgba(0, 255, 0, 0.1)' : 'rgba(255, 255, 255, 0.05)', 
               border: isInKit ? '1px solid #00ff00' : '1px solid #666', 
               color: isInKit ? '#00ff00' : '#fff', 
@@ -211,37 +209,4 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
           </button>
 
           {!isOwner && (
-            <button onClick={handleClone} disabled={isCloning} style={{ background: 'rgba(0, 243, 255, 0.1)', border: '1px solid var(--neon-cyan)', color: 'var(--neon-cyan)', cursor: 'pointer', padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem', fontFamily: 'JetBrains Mono', display: 'flex', alignItems: 'center', gap: '4px' }} title="FORK">
-              {isCloning ? '...' : <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></>}
-            </button>
-          )}
-
-          <button onClick={handleToggleLike} style={{ background: 'rgba(30, 41, 59, 0.5)', border: `1px solid ${isLiked ? '#ec4899' : '#475569'}`, color: isLiked ? '#ec4899' : '#94a3b8', cursor: 'pointer', padding: '4px 8px', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem' }}>
-            <span>{isLiked ? '❤️' : '🤍'}</span><span style={{ fontFamily: 'JetBrains Mono' }}>{likesCount}</span>
-          </button>
-
-          {isOwner && (
-            <>
-              <button onClick={() => onEdit(snippet)} style={{ background: 'rgba(255, 255, 0, 0.1)', border: '1px solid rgba(255, 255, 0, 0.5)', color: '#ffff00', cursor: 'pointer', padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem' }} title="EDIT">
-                ✎
-              </button>
-              
-              <button 
-                onClick={handleDeleteClick} 
-                style={{ 
-                  background: deleteConfirm ? 'rgba(255, 0, 0, 0.3)' : 'rgba(255, 0, 0, 0.1)', 
-                  border: deleteConfirm ? '1px solid #ff0000' : '1px solid rgba(255, 0, 0, 0.5)', 
-                  color: deleteConfirm ? '#fff' : '#ff5555', 
-                  cursor: 'pointer', padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: deleteConfirm ? 'bold' : 'normal', transition: 'all 0.2s'
-                }} 
-                title="DELETE"
-              >
-                {deleteConfirm ? 'CONFIRM?' : '✕'}
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
+            <button onClick={handleClone} disabled={isCloning} style={{ background: 'rgba(0, 243, 255, 0.1)', border: '1px solid var(--neon-cyan)', color: 'var(--neon-cyan)', cursor: 'pointer', padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem', fontFamily: 'JetBrains Mono', display: 'flex', alignItems: 'center',

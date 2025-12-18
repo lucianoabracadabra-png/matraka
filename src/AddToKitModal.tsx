@@ -68,25 +68,6 @@ export function AddToKitModal({ isOpen, onClose, userId, macroId, macroKits = []
 
   if (!isOpen) return null;
 
-  // ESTILO DOS BOTÕES DA LISTA (CYBERPUNK)
-  const listBtnStyle = (isAdded: boolean) => ({
-    background: isAdded ? 'rgba(0, 255, 0, 0.05)' : 'rgba(0, 0, 0, 0.3)',
-    border: isAdded ? '1px solid #00ff00' : '1px solid #444',
-    color: isAdded ? '#00ff00' : '#888',
-    padding: '10px 12px',
-    borderRadius: '2px', // Cantos mais retos
-    textAlign: 'left' as const,
-    cursor: 'pointer',
-    fontFamily: 'JetBrains Mono',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    transition: 'all 0.2s',
-    fontSize: '0.8rem',
-    textTransform: 'uppercase' as const,
-    boxShadow: isAdded ? '0 0 5px rgba(0,255,0,0.2)' : 'none'
-  });
-
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 300,
@@ -113,26 +94,21 @@ export function AddToKitModal({ isOpen, onClose, userId, macroId, macroKits = []
                 key={kit.id}
                 onClick={() => handleToggleKit(kit.id)}
                 disabled={loading}
-                style={listBtnStyle(isAdded)}
-                onMouseEnter={(e) => {
-                   if(!isAdded) {
-                     e.currentTarget.style.borderColor = 'var(--neon-cyan)';
-                     e.currentTarget.style.color = 'var(--neon-cyan)';
-                     e.currentTarget.style.background = 'rgba(0, 243, 255, 0.05)';
-                   }
-                }}
-                onMouseLeave={(e) => {
-                   if(!isAdded) {
-                     e.currentTarget.style.borderColor = '#444';
-                     e.currentTarget.style.color = '#888';
-                     e.currentTarget.style.background = 'rgba(0, 0, 0, 0.3)';
-                   }
+                style={{
+                  // FEEDBACK VISUAL FORTE PARA SELECIONADO
+                  background: isAdded ? 'var(--neon-cyan)' : 'rgba(0, 0, 0, 0.3)',
+                  border: isAdded ? '1px solid var(--neon-cyan)' : '1px solid #444',
+                  color: isAdded ? '#000' : '#888',
+                  padding: '10px 12px', borderRadius: '2px',
+                  textAlign: 'left', cursor: 'pointer', fontFamily: 'JetBrains Mono',
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  transition: 'all 0.2s', fontSize: '0.8rem', textTransform: 'uppercase',
+                  fontWeight: isAdded ? 'bold' : 'normal',
+                  boxShadow: isAdded ? '0 0 10px rgba(0,243,255,0.4)' : 'none'
                 }}
               >
-                <span style={{ fontWeight: 'bold' }}>📁 {kit.name}</span>
-                <span style={{ fontSize: '0.7rem', fontWeight: 'bold', opacity: isAdded ? 1 : 0.6 }}>
-                  {isAdded ? '[ ADDED ]' : '[ SELECT ]'}
-                </span>
+                <span>📁 {kit.name}</span>
+                <span>{isAdded ? '[ LINKED ]' : '[ ADD ]'}</span>
               </button>
             )
           })}
@@ -153,13 +129,3 @@ export function AddToKitModal({ isOpen, onClose, userId, macroId, macroKits = []
               disabled={loading || !newKitName}
               className="cyber-btn-main"
               style={{ padding: '0 20px', fontSize: '0.8rem', minWidth: 'auto' }}
-            >
-              CRIAR
-            </button>
-          </div>
-        </div>
-
-      </div>
-    </div>
-  );
-}
