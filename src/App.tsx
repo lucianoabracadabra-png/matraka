@@ -52,6 +52,7 @@ function App() {
 
   // Busca o nome do usuário atual para exibir no Header
   const fetchUserProfile = async (userId: string) => {
+    // AGORA PODEMOS PEDIR O EMAIL SEM MEDO! O banco tem a coluna.
     const { data } = await supabase.from('profiles').select('username, email').eq('id', userId).single();
     if (data) {
       setMyUsername(data.username || data.email?.split('@')[0] || 'Unknown');
@@ -63,9 +64,8 @@ function App() {
     if (!session) return;
     setLoading(true);
     
-    // CORREÇÃO AQUI:
-    // Usamos 'profiles!macros_user_id_fkey' para dizer explicitamente que queremos
-    // o perfil do AUTOR (user_id), e não os likes.
+    // 1. Busca as macros. 
+    // AGORA PEDIMOS O EMAIL TAMBÉM: profiles!macros_user_id_fkey(username, email)
     const { data: macrosData, error: macrosError } = await supabase
       .from('macros')
       .select('*, macro_likes(count), profiles!macros_user_id_fkey(username, email)')
@@ -93,8 +93,10 @@ function App() {
         folderName: 'Todas as Macros',
         likes_count: macro.macro_likes?.[0]?.count || 0,
         liked_by_me: myLikedIds.has(macro.id),
-        // O Supabase retorna os dados dentro da chave 'profiles' mesmo com a especificação acima
+        
+        // LÓGICA COMPLETA DE AUTOR: Username -> Email -> Unknown
         author: macro.profiles?.username || macro.profiles?.email?.split('@')[0] || 'Unknown',
+        
         created_at: macro.created_at 
       }));
       
@@ -232,7 +234,7 @@ function App() {
 
         {!loading && Object.entries(groupedSnippets).map(([fileName, snippets]) => (
           <div key={fileName} className="file-group">
-            <div className="file-header" style={{ borderBottom: '1px solid var(--neon-purple)' }}>
+            <div className="file-header">
               <span className="file-title">{fileName}</span>
             </div>
             
