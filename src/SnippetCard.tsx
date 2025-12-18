@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { supabase } from './supabaseClient';
+import { useToast } from './ToastContext';
 
 interface Props {
   snippet: any;
@@ -10,10 +11,10 @@ interface Props {
 }
 
 export function SnippetCard({ snippet, userId, onDelete, initialLikes, initialLiked }: Props) {
+  const { addToast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isCloning, setIsCloning] = useState(false); // Estado para o loading do clone
+  const [isCloning, setIsCloning] = useState(false);
   
-  // Estados para o Like
   const [likesCount, setLikesCount] = useState(initialLikes);
   const [isLiked, setIsLiked] = useState(initialLiked);
   const [isLikeLoading, setIsLikeLoading] = useState(false);
@@ -29,6 +30,7 @@ export function SnippetCard({ snippet, userId, onDelete, initialLikes, initialLi
   const applyDynamicTranslations = (text: string) => {
     if (!text) return '';
     let newText = text;
+    // Regras de substituição para deixar bonitinho
     newText = newText.replace(/\{site:\s*text;\s*page=[^;]+;\s*selector=\.customer-name\}/gi, '<span class="macro-tag tag-client">[Cliente]</span>');
     newText = newText.replace(/\{site:\s*text;\s*page=[^;]+;\s*selector=\.drawer :nth-child\(1\) > span\}/gi, '<span class="macro-tag tag-client">[Cliente]</span>');
     newText = newText.replace(/\{site:\s*text;\s*page=[^;]+;\s*selector=#ticket-team\}/gi, '<span class="macro-tag tag-theme">[Tema]</span>');
@@ -45,7 +47,10 @@ export function SnippetCard({ snippet, userId, onDelete, initialLikes, initialLi
     const messages = rawText.split(/\{key:\s*enter\}/gi);
     return messages.map((msg) => {
       if (!msg.trim()) return null;
+      
+      // AQUI ESTAVA O ERRO: Agora chamamos a função corretamente
       let processedContent = applyDynamicTranslations(msg);
+      
       processedContent = processedContent.replace(/\n/g, '<br>');
       return processedContent;
     }).filter(Boolean);
@@ -70,50 +75,51 @@ export function SnippetCard({ snippet, userId, onDelete, initialLikes, initialLi
       console.error(error);
       setIsLiked(!newLikedState);
       setLikesCount(prev => !newLikedState ? prev + 1 : prev - 1);
+      addToast('ERRO AO CURTIR', 'error');
     } finally {
       setIsLikeLoading(false);
     }
   };
 
-  // --- LÓGICA DE CLONAR (FORK) ---
   const handleClone = async () => {
     if (isCloning) return;
-    if (!confirm(`CLONAR A MACRO "${snippet.name}" PARA SUA BIBLIOTECA?`)) return;
+    if (!confirm(`CONFIRMAR CLONAGEM DE: "${snippet.name}"?`)) return;
 
     setIsCloning(true);
 
     const { error } = await supabase.from('macros').insert({
-      user_id: userId, // Salva com O SEU ID, não o do criador original
-      title: `${snippet.name} (Copy)`, // Adiciona (Copy) para você saber
+      user_id: userId,
+      title: `${snippet.name} (Copy)`,
       content: snippet.text,
-      shortcut: snippet.shortcut ? `${snippet.shortcut}_copy` : '', // Evita conflito de atalho
+      shortcut: snippet.shortcut ? `${snippet.shortcut}_copy` : '',
       app_category: snippet.app || 'TEXT',
       type: 'text',
-      is_public: false // Começa privada pra você editar
+      is_public: false
     });
 
     if (error) {
-      alert('ERRO AO CLONAR: ' + error.message);
+      addToast('FALHA NA CLONAGEM: ' + error.message, 'error');
     } else {
-      alert('MACRO CLONADA COM SUCESSO! ATUALIZANDO LISTA...');
-      onDelete(); // Truque: chamamos onDelete para forçar o App.tsx a recarregar a lista
+      addToast('MACRO CLONADA COM SUCESSO!', 'success');
+      onDelete(); 
     }
     setIsCloning(false);
   };
 
   const handleDelete = async () => {
-    if (!confirm('DELETE_MACRO?')) return;
+    if (!confirm('CONFIRMA DELETAR ESTA MACRO? AÇÃO IRREVERSÍVEL.')) return;
     setIsDeleting(true);
     const { error } = await supabase.from('macros').delete().eq('id', snippet.id);
     if (error) {
-      alert('ERROR: ' + error.message);
+      addToast('ERRO AO DELETAR: ' + error.message, 'error');
       setIsDeleting(false);
     } else {
+      addToast('MACRO DELETADA.', 'info');
       onDelete();
     }
   };
 
-  // --- FORMATAÇÃO DE DATA ---
+  // --- FORMATAÇÃO DATA ---
   let formattedDate = '...'; 
   if (snippet.created_at) {
     try {
@@ -124,7 +130,7 @@ export function SnippetCard({ snippet, userId, onDelete, initialLikes, initialLi
           day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit'
         });
       }
-    } catch (e) { console.warn(e); }
+    } catch (e) { }
   }
 
   const rawDecodedText = decodeHtml(snippet.text);
@@ -159,7 +165,7 @@ export function SnippetCard({ snippet, userId, onDelete, initialLikes, initialLi
         DEV_ID: <span style={{ color: '#94a3b8' }}>{snippet.author}</span>
       </div>
 
-      {/* BLOCO: CONTEÚDO */}
+      {/* CONTEÚDO */}
       <div className="snippet-content" style={{ flex: 1, marginBottom: '1rem' }}>
         <div className="chat-container">
           {chatMessages.map((msgHtml, msgIdx) => (
@@ -168,16 +174,13 @@ export function SnippetCard({ snippet, userId, onDelete, initialLikes, initialLi
         </div>
       </div>
 
-      {/* LINHA 5: RODAPÉ */}
-      <div style={{ 
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        paddingTop: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.1)', marginTop: 'auto'
-      }}>
+      {/* RODAPÉ */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.1)', marginTop: 'auto' }}>
         <span style={{ fontFamily: 'monospace', fontSize: '0.7rem', color: '#64748b' }}>{formattedDate}</span>
 
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           
-          {/* BOTÃO CLONAR (Só aparece se NÃO for o dono) */}
+          {/* CLONE / FORK */}
           {!isOwner && (
             <button
               onClick={handleClone}
@@ -198,7 +201,7 @@ export function SnippetCard({ snippet, userId, onDelete, initialLikes, initialLi
             </button>
           )}
 
-          {/* Like */}
+          {/* LIKE */}
           <button 
             onClick={handleToggleLike}
             style={{
@@ -211,7 +214,7 @@ export function SnippetCard({ snippet, userId, onDelete, initialLikes, initialLi
             <span style={{ fontFamily: 'JetBrains Mono' }}>{likesCount}</span>
           </button>
 
-          {/* Delete (Só se for dono) */}
+          {/* DELETE */}
           {isOwner && (
             <button 
               onClick={handleDelete}
