@@ -241,6 +241,7 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
                 ✎
               </button>
               
+              {/* BOTÃO DELETE CORRIGIDO PARA USAR PINK AO INVÉS DE RED */}
               <button 
                 onClick={handleDeleteClick} 
                 className="btn-delete-neon"
@@ -248,6 +249,7 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
                   borderRadius: '4px', padding: '4px 8px', fontSize: '0.75rem', 
                   fontFamily: 'JetBrains Mono', cursor: 'pointer',
                   fontWeight: deleteConfirm ? 'bold' : 'normal',
+                  // Se estiver confirmando, fica rosa sólido com texto preto
                   background: deleteConfirm ? 'var(--neon-pink)' : undefined,
                   color: deleteConfirm ? '#000' : undefined
                 }} 
