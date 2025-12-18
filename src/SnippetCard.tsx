@@ -9,10 +9,10 @@ interface Props {
   onEdit: (snippet: any) => void;
   initialLikes: number;
   initialLiked: boolean;
+  onAddToKit: (id: string) => void; 
 }
 
-export function SnippetCard({ snippet, userId, onDelete, onEdit, initialLikes, initialLiked }: Props) {
-  const { addToast } = useToast();
+export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariables, onAddToKit, initialLikes, initialLiked }: Props) {  const { addToast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isCloning, setIsCloning] = useState(false);
   const [likesCount, setLikesCount] = useState(initialLikes);

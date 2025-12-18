@@ -4,6 +4,8 @@ import { Auth } from './Auth';
 import { CreateMacroModal } from './CreateMacroModal';
 import { SnippetCard } from './SnippetCard';
 import { ProfileModal } from './ProfileModal';
+import { InputVariableModal } from './InputVariableModal';
+import { AddToKitModal } from './AddToKitModal'; // <--- IMPORT NOVO
 import { useToast } from './ToastContext';
 import type { Session } from '@supabase/supabase-js';
 import './index.css';
@@ -23,11 +25,19 @@ interface Snippet {
   created_at: string;
 }
 
+interface Kit {
+  id: string;
+  name: string;
+}
+
 function App() {
   const { addToast } = useToast();
   
-  // NAVEGAÇÃO & FILTROS
-  const [activeTab, setActiveTab] = useState('ALL'); 
+  // NAVEGAÇÃO
+  const [activeTab, setActiveTab] = useState('ALL'); // ALL, MINE, FAVS, KITS
+  const [selectedKitId, setSelectedKitId] = useState<string | null>(null); // Qual kit está aberto
+  
+  // TOGGLES
   const [showAI, setShowAI] = useState(true);
   const [showText, setShowText] = useState(true);
 
@@ -35,53 +45,50 @@ function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [allSnippets, setAllSnippets] = useState<Snippet[]>([]);
   const [filteredSnippets, setFilteredSnippets] = useState<Snippet[]>([]);
+  const [myKits, setMyKits] = useState<Kit[]>([]); // Lista de kits do usuário
+  const [kitItems, setKitItems] = useState<Record<string, Set<string>>>({}); // Mapa: kit_id -> Set(macro_ids)
+
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
+  const [myUsername, setMyUsername] = useState('Loading...');
   
   // MODAIS
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [macroToEdit, setMacroToEdit] = useState<Snippet | null>(null);
+  
+  // Modal Input Variables
+  const [isInputModalOpen, setIsInputModalOpen] = useState(false);
+  const [varsToProcess, setVarsToProcess] = useState<string[]>([]);
+  const [macroToProcess, setMacroToProcess] = useState<Snippet | null>(null);
 
-  const [myUsername, setMyUsername] = useState('Loading...');
+  // Modal Add To Kit
+  const [isAddToKitOpen, setIsAddToKitOpen] = useState(false);
+  const [macroIdToAdd, setMacroIdToAdd] = useState<string | null>(null);
 
   // --- 1. SESSÃO ---
   useEffect(() => {
-    // Verifica sessão atual
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session) fetchUserProfile(session.user.id);
     });
-
-    // Escuta mudanças (Login/Logout externos)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       if (session) fetchUserProfile(session.user.id);
     });
-
     return () => subscription.unsubscribe();
   }, []);
 
   const fetchUserProfile = async (userId: string) => {
     const { data } = await supabase.from('profiles').select('username, email').eq('id', userId).single();
-    if (data) {
-      setMyUsername(data.username || data.email?.split('@')[0] || 'Unknown');
-    }
+    if (data) setMyUsername(data.username || data.email?.split('@')[0] || 'Unknown');
   };
 
-  // --- FUNÇÃO DE LOGOUT BLINDADA ---
   const handleLogout = async () => {
-    try {
-      // 1. Tenta avisar o Supabase
-      await supabase.auth.signOut();
-    } catch (error) {
-      console.error('Erro ao sair:', error);
-    } finally {
-      // 2. FORÇA a saída visualmente, mesmo se der erro acima
-      setSession(null);
-      setAllSnippets([]); // Limpa dados da memória por segurança
-      addToast('SESSÃO ENCERRADA', 'info');
-    }
+    await supabase.auth.signOut();
+    setSession(null);
+    setAllSnippets([]);
+    addToast('SESSÃO ENCERRADA', 'info');
   };
 
   // --- 2. BUSCA DADOS ---
@@ -89,19 +96,21 @@ function App() {
     if (!session) return;
     setLoading(true);
     
+    // Busca Macros
     const { data: macrosData, error: macrosError } = await supabase
       .from('macros')
       .select('*, macro_likes(count), profiles!macros_user_id_fkey(username, email)')
       .order('created_at', { ascending: false });
 
-    const { data: myLikesData, error: likesError } = await supabase
-      .from('macro_likes')
-      .select('macro_id')
-      .eq('user_id', session.user.id);
+    // Busca Likes
+    const { data: myLikesData } = await supabase.from('macro_likes').select('macro_id').eq('user_id', session.user.id);
 
-    if (macrosError || likesError) {
-      console.error('Erro:', macrosError || likesError);
-      addToast('FALHA DE CONEXÃO COM O SISTEMA', 'error');
+    // Busca Kits e Itens
+    const { data: kitsData } = await supabase.from('kits').select('*').eq('user_id', session.user.id).order('created_at');
+    const { data: itemsData } = await supabase.from('kit_items').select('kit_id, macro_id');
+
+    if (macrosError) {
+      addToast('FALHA DE CONEXÃO', 'error');
     } else if (macrosData) {
       const myLikedIds = new Set(myLikesData?.map((l: any) => l.macro_id) || []);
 
@@ -121,7 +130,21 @@ function App() {
       }));
       
       setAllSnippets(mappedSnippets);
-      setFilteredSnippets(mappedSnippets);
+      
+      // Processa Kits
+      if (kitsData) setMyKits(kitsData);
+      
+      // Processa Itens dos Kits (Map para acesso rápido)
+      const itemsMap: Record<string, Set<string>> = {};
+      if (kitsData) {
+          kitsData.forEach((k: Kit) => itemsMap[k.id] = new Set());
+      }
+      if (itemsData) {
+          itemsData.forEach((item: any) => {
+              if (itemsMap[item.kit_id]) itemsMap[item.kit_id].add(item.macro_id);
+          });
+      }
+      setKitItems(itemsMap);
     }
     setLoading(false);
   }, [session, addToast]);
@@ -131,20 +154,36 @@ function App() {
   }, [fetchMacros]);
 
   // --- 3. ACTIONS ---
-  const handleEdit = (snippet: Snippet) => {
-    setMacroToEdit(snippet);
-    setIsModalOpen(true);
+  const handleEdit = (snippet: Snippet) => { setMacroToEdit(snippet); setIsModalOpen(true); };
+  const handleCreateNew = () => { setMacroToEdit(null); setIsModalOpen(true); };
+  
+  const handleProcessVariables = (snippet: Snippet, variables: string[]) => {
+    setMacroToProcess(snippet);
+    setVarsToProcess(variables);
+    setIsInputModalOpen(true);
   };
 
-  const handleCreateNew = () => {
-    setMacroToEdit(null);
-    setIsModalOpen(true);
+  const handleAddToKit = (id: string) => {
+    setMacroIdToAdd(id);
+    setIsAddToKitOpen(true);
   };
 
-  // --- 4. FILTRO ---
+  const handleDeleteKit = async (kitId: string, kitName: string) => {
+    if (!confirm(`Deletar o kit "${kitName}"? As macros não serão apagadas, apenas a pasta.`)) return;
+    const { error } = await supabase.from('kits').delete().eq('id', kitId);
+    if (error) addToast('ERRO AO DELETAR KIT', 'error');
+    else {
+        addToast('KIT REMOVIDO', 'info');
+        fetchMacros();
+        if (selectedKitId === kitId) setSelectedKitId(null);
+    }
+  };
+
+  // --- 4. FILTRO INTELIGENTE ---
   useEffect(() => {
     const term = searchTerm.toLowerCase();
     
+    // A. Filtro de Texto Global
     let filtered = allSnippets.filter(snippet => 
       (snippet.name && snippet.name.toLowerCase().includes(term)) ||
       (snippet.shortcut && snippet.shortcut.toLowerCase().includes(term)) ||
@@ -152,26 +191,37 @@ function App() {
       (snippet.author && snippet.author.toLowerCase().includes(term))
     );
 
+    // B. Filtro de Aba (Escopo)
     if (activeTab === 'MINE') {
       filtered = filtered.filter(s => s.user_id === session?.user.id);
     } else if (activeTab === 'FAVS') {
       filtered = filtered.filter(s => s.liked_by_me);
+    } else if (activeTab === 'KITS') {
+      // Lógica de Kits: Se tem um kit selecionado, mostra só o que tá nele
+      if (selectedKitId && kitItems[selectedKitId]) {
+          filtered = filtered.filter(s => kitItems[selectedKitId].has(s.id));
+      } else {
+          // Se não tem kit selecionado, mostra TUDO (ou poderia mostrar vazio, decisão de UX)
+          // Vamos mostrar vazio para forçar a seleção de um kit e limpar a tela
+          // Mas vamos deixar mostrando 'MINE' por padrão quando entra na aba Kits sem selecionar nada?
+          // Não, melhor deixar limpo ou mostrar instrução.
+          // Vou optar por mostrar as do usuário para não ficar tela branca feia.
+          filtered = filtered.filter(s => s.user_id === session?.user.id);
+      }
     }
 
+    // C. Filtro de Tipo (Toggles)
     filtered = filtered.filter(s => {
       const isAI = s.app === 'AI';
       const isText = s.app === 'TEXT' || !s.app; 
-
       if (isAI && !showAI) return false;
       if (isText && !showText) return false;
-      
       return true;
     });
 
     setFilteredSnippets(filtered);
-  }, [searchTerm, allSnippets, activeTab, showAI, showText, session]);
+  }, [searchTerm, allSnippets, activeTab, selectedKitId, showAI, showText, session, kitItems]);
 
-  // Agrupamento
   const groupedSnippets = filteredSnippets.reduce((groups, snippet) => {
     const file = snippet.sourceFile;
     if (!groups[file]) groups[file] = [];
@@ -179,16 +229,7 @@ function App() {
     return groups;
   }, {} as Record<string, Snippet[]>);
 
-  if (!session) {
-    return (
-      <>
-        <div className="cyber-grid"></div><div className="cyber-glow"></div>
-        <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
-          <Auth />
-        </div>
-      </>
-    );
-  }
+  if (!session) return <div className="container" style={{display:'flex',justifyContent:'center', alignItems:'center', height:'100vh'}}><Auth /></div>;
 
   return (
     <>
@@ -201,58 +242,41 @@ function App() {
         <div className="header">
           <div className="header-top" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
             <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
-              
-              {/* LOGO */}
               <div style={{ width: '64px', height: '64px', background: 'rgba(5, 5, 10, 0.8)', border: '1px solid var(--neon-cyan)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 20px rgba(0, 243, 255, 0.2)', transform: 'skewX(-10deg)', position: 'relative', flexShrink: 0 }}>
                 <div style={{ position: 'absolute', top: '-1px', right: '-1px', width: '10px', height: '10px', background: 'var(--neon-pink)', clipPath: 'polygon(0 0, 100% 0, 100% 100%)' }}></div>
-                <svg width="42" height="42" viewBox="0 0 100 100" fill="none" strokeWidth="2" style={{ transform: 'skewX(10deg)' }}>
-                  <path d="M30 30 L60 30 L90 50 L60 60 L60 80 L30 70 Z" stroke="var(--neon-cyan)" fill="rgba(0, 243, 255, 0.1)" strokeLinejoin="round" />
-                  <path d="M55 40 L65 40 L60 50 Z" fill="var(--neon-pink)" stroke="none" />
-                  <path d="M10 50 L40 50 L50 60" stroke="var(--neon-purple)" strokeWidth="3" strokeLinecap="round" />
-                  <path d="M30 85 L70 85" stroke="var(--neon-cyan)" strokeDasharray="2 4" />
-                </svg>
+                <h1 style={{margin:0, fontSize:'2rem', color:'var(--neon-cyan)'}}>MK</h1>
               </div>
-
               <div>
                 <h1 className="title" style={{ margin: 0, fontSize: '3rem', lineHeight: 1 }}>MATRAKA</h1>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '0.5rem' }}>
-                  <p className="subtitle" style={{ margin: 0, fontFamily: 'JetBrains Mono' }}>
-                    SYSTEM.USER: <span style={{color: '#fff', fontWeight: 'bold'}}>{myUsername}</span>
-                  </p>
-                  <button onClick={() => setIsProfileOpen(true)} className="btn-neon" style={{ fontSize: '0.7rem', padding: '2px 8px', borderColor: 'var(--neon-purple)', color: 'var(--neon-purple)' }}>SETUP_ID</button>
-                  
-                  {/* --- BOTÃO DE LOGOUT CORRIGIDO --- */}
-                  <button 
-                    onClick={handleLogout} 
-                    className="btn-neon" 
-                    style={{ fontSize: '0.7rem', padding: '2px 8px' }}
-                  >
-                    LOGOUT
-                  </button>
-                  
+                    <span className="subtitle" style={{fontFamily:'JetBrains Mono'}}>USER: {myUsername}</span>
+                    <button onClick={handleLogout} className="btn-neon" style={{ fontSize: '0.7rem', padding: '2px 8px' }}>LOGOUT</button>
                 </div>
               </div>
             </div>
-
             <button onClick={handleCreateNew} className="btn-create" title="Nova Macro" style={{ flexShrink: 0 }}>+</button>
           </div>
 
           <div className="search-box" style={{ marginTop: '2rem', position: 'relative' }}>
-            <svg className="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
-            <input type="text" className="search-input" placeholder="SEARCH_DATABASE..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-            <span className="search-count" style={{position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--neon-cyan)'}}>{filteredSnippets.length} RECORDS_FOUND</span>
+             <input type="text" className="search-input" placeholder="SEARCH_DATABASE..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
           </div>
 
-          {/* BARRA DE CONTROLE */}
+          {/* BARRA DE NAVEGAÇÃO PRINCIPAL */}
           <div style={{ 
             display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem',
             marginTop: '1.5rem', borderBottom: '1px solid rgba(0, 243, 255, 0.2)', paddingBottom: '0.5rem'
           }}>
             <div style={{ display: 'flex', gap: '1rem', overflowX: 'auto' }}>
-              {['ALL', 'MINE', 'FAVS'].map((tab) => {
+              {['ALL', 'MINE', 'FAVS', 'KITS'].map((tab) => {
                 const isActive = activeTab === tab;
                 return (
-                  <button key={tab} onClick={() => setActiveTab(tab)} style={{ background: isActive ? 'var(--neon-cyan)' : 'transparent', color: isActive ? '#000' : 'var(--neon-cyan)', border: 'none', padding: '0.5rem 1rem', cursor: 'pointer', fontWeight: 'bold', fontFamily: 'JetBrains Mono', fontSize: '0.9rem', clipPath: 'polygon(10% 0, 100% 0, 90% 100%, 0% 100%)', transition: 'all 0.2s', minWidth: '80px' }}>
+                  <button key={tab} onClick={() => { setActiveTab(tab); if(tab !== 'KITS') setSelectedKitId(null); }} 
+                    style={{ 
+                        background: isActive ? 'var(--neon-cyan)' : 'transparent', 
+                        color: isActive ? '#000' : 'var(--neon-cyan)', 
+                        border: 'none', padding: '0.5rem 1rem', cursor: 'pointer', fontWeight: 'bold', 
+                        fontFamily: 'JetBrains Mono', clipPath: 'polygon(10% 0, 100% 0, 90% 100%, 0% 100%)' 
+                    }}>
                     {tab}
                   </button>
                 )
@@ -260,19 +284,50 @@ function App() {
             </div>
 
             <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button onClick={() => setShowAI(!showAI)} style={{ background: showAI ? 'rgba(255, 0, 255, 0.2)' : 'transparent', border: `1px solid ${showAI ? 'var(--neon-pink)' : '#444'}`, color: showAI ? 'var(--neon-pink)' : '#666', padding: '0.3rem 0.8rem', cursor: 'pointer', borderRadius: '4px', fontFamily: 'JetBrains Mono', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: showAI ? 'var(--neon-pink)' : '#444' }}></span>
-                AI_MODE
-              </button>
-              <button onClick={() => setShowText(!showText)} style={{ background: showText ? 'rgba(0, 243, 255, 0.2)' : 'transparent', border: `1px solid ${showText ? 'var(--neon-cyan)' : '#444'}`, color: showText ? 'var(--neon-cyan)' : '#666', padding: '0.3rem 0.8rem', cursor: 'pointer', borderRadius: '4px', fontFamily: 'JetBrains Mono', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: showText ? 'var(--neon-cyan)' : '#444' }}></span>
-                TXT_MODE
-              </button>
+              <button onClick={() => setShowAI(!showAI)} style={{ border: `1px solid ${showAI ? 'var(--neon-pink)' : '#444'}`, color: showAI ? 'var(--neon-pink)' : '#666', background:'transparent', padding: '0.3rem 0.8rem', cursor: 'pointer', fontFamily: 'JetBrains Mono', fontSize: '0.8rem' }}>AI</button>
+              <button onClick={() => setShowText(!showText)} style={{ border: `1px solid ${showText ? 'var(--neon-cyan)' : '#444'}`, color: showText ? 'var(--neon-cyan)' : '#666', background:'transparent', padding: '0.3rem 0.8rem', cursor: 'pointer', fontFamily: 'JetBrains Mono', fontSize: '0.8rem' }}>TXT</button>
             </div>
           </div>
+
+          {/* SUB-BARRA DE KITS (SÓ APARECE SE ABA FOR KITS) */}
+          {activeTab === 'KITS' && (
+              <div style={{ 
+                  display: 'flex', gap: '0.8rem', padding: '1rem 0', overflowX: 'auto', 
+                  borderBottom: '1px solid rgba(255,255,255,0.1)', animation: 'fadeIn 0.3s'
+              }}>
+                  <button 
+                    onClick={() => setIsAddToKitOpen(true)} // Atalho para criar kit rápido
+                    style={{ background: 'var(--neon-pink)', color: '#000', border: 'none', borderRadius: '4px', padding: '6px 12px', cursor: 'pointer', fontWeight:'bold', fontSize:'0.8rem' }}
+                  >
+                      + NOVO KIT
+                  </button>
+                  
+                  {myKits.length === 0 && <span style={{color:'#666', fontSize:'0.8rem', alignSelf:'center'}}>Crie seu primeiro kit!</span>}
+
+                  {myKits.map(kit => (
+                      <div key={kit.id} style={{display:'flex', alignItems:'center', background: selectedKitId === kit.id ? 'rgba(0, 243, 255, 0.2)' : 'rgba(255,255,255,0.05)', borderRadius:'4px', border: selectedKitId === kit.id ? '1px solid var(--neon-cyan)' : '1px solid #444'}}>
+                          <button
+                            onClick={() => setSelectedKitId(kit.id)}
+                            style={{ 
+                                background: 'transparent', border: 'none', color: '#fff', 
+                                padding: '6px 12px', cursor: 'pointer', fontFamily: 'JetBrains Mono', fontSize: '0.8rem'
+                            }}
+                          >
+                              📁 {kit.name} <span style={{opacity:0.5}}>({kitItems[kit.id]?.size || 0})</span>
+                          </button>
+                          {/* Botão Deletar Kit Pequeno */}
+                          <button 
+                            onClick={() => handleDeleteKit(kit.id, kit.name)}
+                            style={{ background:'transparent', border:'none', color:'#666', cursor:'pointer', padding:'0 8px', fontSize:'10px' }}
+                            title="Deletar Kit"
+                          >✕</button>
+                      </div>
+                  ))}
+              </div>
+          )}
         </div>
 
-        {loading && <div className="loading"><div className="spinner"></div><p>LOADING_SYSTEM...</p></div>}
+        {loading && <div className="loading"><div className="spinner"></div><p>LOADING...</p></div>}
 
         {!loading && Object.entries(groupedSnippets).map(([fileName, snippets]) => (
           <div key={fileName} className="file-group">
@@ -284,6 +339,8 @@ function App() {
                   userId={session.user.id} 
                   onDelete={() => fetchMacros()}
                   onEdit={handleEdit}
+                  onProcessVariables={handleProcessVariables}
+                  onAddToKit={handleAddToKit} // <--- Passando função nova
                   initialLikes={snippet.likes_count}
                   initialLiked={snippet.liked_by_me}
                 />
@@ -292,21 +349,21 @@ function App() {
           </div>
         ))}
 
-        <CreateMacroModal 
-          isOpen={isModalOpen} 
-          onClose={() => setIsModalOpen(false)}
-          onSuccess={() => fetchMacros()}
-          userId={session.user.id}
-          macroToEdit={macroToEdit}
+        {/* MODAIS */}
+        <CreateMacroModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={() => fetchMacros()} userId={session.user.id} macroToEdit={macroToEdit} />
+        <ProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} userId={session.user.id} onUpdate={() => { fetchUserProfile(session.user.id); fetchMacros(); }} />
+        <InputVariableModal isOpen={isInputModalOpen} onClose={() => setIsInputModalOpen(false)} variables={varsToProcess} originalText={macroToProcess?.text || ''} />
+        
+        {/* MODAL ADICIONAR AO KIT */}
+        <AddToKitModal 
+            isOpen={isAddToKitOpen} 
+            onClose={() => { setIsAddToKitOpen(false); fetchMacros(); }} // Refresh para atualizar contagem
+            userId={session.user.id}
+            macroId={macroIdToAdd}
         />
 
-        <ProfileModal 
-          isOpen={isProfileOpen}
-          onClose={() => setIsProfileOpen(false)}
-          userId={session.user.id}
-          onUpdate={() => { fetchUserProfile(session.user.id); fetchMacros(); }}
-        />
       </div>
+      <style>{`@keyframes fadeIn { from { opacity:0; transform:translateY(-5px); } to { opacity:1; transform:translateY(0); } }`}</style>
     </>
   );
 }
