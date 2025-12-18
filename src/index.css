@@ -487,3 +487,39 @@ body {
   box-shadow: 0 0 15px var(--neon-pink);
   transform: scale(1.05);
 }
+
+.title-glitch {
+  font-family: 'JetBrains Mono', monospace; /* Ou sua fonte de título */
+  font-weight: 900;
+  font-size: 3rem; /* Tamanho grande do Header */
+  color: #fff;
+  position: relative;
+  letter-spacing: -2px;
+  text-transform: uppercase;
+  /* Animação mais lenta e "pesada" para o título */
+  animation: glitch-skew 3s infinite linear alternate-reverse;
+}
+
+.title-glitch::before,
+.title-glitch::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.title-glitch::before {
+  left: 2px;
+  text-shadow: -2px 0 var(--neon-pink);
+  clip: rect(44px, 450px, 56px, 0);
+  animation: glitch-anim 4s infinite linear alternate-reverse;
+}
+
+.title-glitch::after {
+  left: -2px;
+  text-shadow: -2px 0 var(--neon-cyan);
+  clip: rect(44px, 450px, 56px, 0);
+  animation: glitch-anim2 4s infinite linear alternate-reverse;
+}

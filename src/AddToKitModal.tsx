@@ -17,6 +17,7 @@ export function AddToKitModal({ isOpen, onClose, userId, macroId, macroKits = []
   const [loading, setLoading] = useState(false);
   const [localMacroKits, setLocalMacroKits] = useState<string[]>([]);
 
+  // Sincroniza apenas quando abre para não perder o estado local durante interações
   useEffect(() => {
     if (isOpen) {
       fetchKits();
@@ -44,26 +45,37 @@ export function AddToKitModal({ isOpen, onClose, userId, macroId, macroKits = []
 
   const handleToggleKit = async (kitId: string) => {
     if (!macroId) return;
-    setLoading(true);
-
+    
+    // UI OTIMISTA: Muda o estado visual ANTES da chamada da API
     const isAdded = localMacroKits.includes(kitId);
+    
+    // Atualiza estado local imediatamente
+    if (isAdded) {
+      setLocalMacroKits(prev => prev.filter(id => id !== kitId));
+    } else {
+      setLocalMacroKits(prev => [...prev, kitId]);
+    }
 
+    // Faz a chamada em background
     if (isAdded) {
       const { error } = await supabase.from('kit_items').delete().eq('kit_id', kitId).eq('macro_id', macroId);
-      if (error) addToast('ERRO AO REMOVER', 'error');
-      else {
-        setLocalMacroKits(prev => prev.filter(id => id !== kitId));
-        addToast('REMOVIDO DO KIT', 'info');
+      if (error) {
+        addToast('ERRO AO REMOVER', 'error');
+        // Reverte se der erro
+        setLocalMacroKits(prev => [...prev, kitId]);
+      } else {
+        // Sucesso silencioso ou toast rápido
       }
     } else {
       const { error } = await supabase.from('kit_items').insert({ kit_id: kitId, macro_id: macroId });
-      if (error) addToast('ERRO AO ADICIONAR', 'error');
-      else {
-        setLocalMacroKits(prev => [...prev, kitId]);
-        addToast('ADICIONADO AO KIT', 'success');
+      if (error) {
+        addToast('ERRO AO ADICIONAR', 'error');
+        // Reverte se der erro
+        setLocalMacroKits(prev => prev.filter(id => id !== kitId));
+      } else {
+        // Sucesso
       }
     }
-    setLoading(false);
   };
 
   if (!isOpen) return null;
@@ -93,7 +105,6 @@ export function AddToKitModal({ isOpen, onClose, userId, macroId, macroKits = []
               <button
                 key={kit.id}
                 onClick={() => handleToggleKit(kit.id)}
-                disabled={loading}
                 style={{
                   background: isAdded ? 'rgba(0, 255, 0, 0.15)' : 'rgba(0, 0, 0, 0.3)',
                   border: isAdded ? '1px solid #00ff00' : '1px solid #444',
@@ -101,7 +112,7 @@ export function AddToKitModal({ isOpen, onClose, userId, macroId, macroKits = []
                   padding: '12px', borderRadius: '2px',
                   textAlign: 'left', cursor: 'pointer', fontFamily: 'JetBrains Mono',
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  transition: 'all 0.2s',
+                  transition: 'all 0.1s', // Transição rápida
                   boxShadow: isAdded ? '0 0 10px rgba(0, 255, 0, 0.2)' : 'none'
                 }}
                 onMouseEnter={(e) => {
