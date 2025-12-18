@@ -4,9 +4,11 @@ import { Auth } from './Auth';
 import { CreateMacroModal } from './CreateMacroModal';
 import { SnippetCard } from './SnippetCard';
 import { ProfileModal } from './ProfileModal';
+import { useToast } from './ToastContext'; // <--- 1. Importar
 import type { Session } from '@supabase/supabase-js';
 import './index.css';
 
+// ... (Interface Snippet continua igual) ...
 interface Snippet {
   id: string;
   user_id: string;
@@ -23,10 +25,10 @@ interface Snippet {
 }
 
 function App() {
-  // NAVEGAÇÃO
-  const [activeTab, setActiveTab] = useState('ALL'); // ALL, MINE, FAVS
+  const { addToast } = useToast(); // <--- 2. Instanciar Hook
   
-  // TOGGLES (FILTROS)
+  // NAVEGAÇÃO
+  const [activeTab, setActiveTab] = useState('ALL'); 
   const [showAI, setShowAI] = useState(true);
   const [showText, setShowText] = useState(true);
 
@@ -80,8 +82,10 @@ function App() {
       .select('macro_id')
       .eq('user_id', session.user.id);
 
+    // 3. TRATAMENTO DE ERRO COM TOAST
     if (macrosError || likesError) {
       console.error('Erro:', macrosError || likesError);
+      addToast('FALHA DE CONEXÃO COM O SISTEMA', 'error'); // <--- Aviso visual para o usuário
     } else if (macrosData) {
       const myLikedIds = new Set(myLikesData?.map((l: any) => l.macro_id) || []);
 
@@ -92,7 +96,7 @@ function App() {
         text: macro.content,
         shortcut: macro.shortcut,
         app: macro.app_category || 'TEXT',
-        sourceFile: 'Geral', // Mantemos internamente, mas não mostramos mais
+        sourceFile: 'Geral', 
         folderName: 'Todas as Macros',
         likes_count: macro.macro_likes?.[0]?.count || 0,
         liked_by_me: myLikedIds.has(macro.id),
@@ -104,7 +108,7 @@ function App() {
       setFilteredSnippets(mappedSnippets);
     }
     setLoading(false);
-  }, [session]);
+  }, [session, addToast]); // Inclui addToast nas dependências
 
   useEffect(() => {
     fetchMacros();
@@ -121,11 +125,10 @@ function App() {
     setIsModalOpen(true);
   };
 
-  // --- 4. FILTRO PODEROSO (BUSCA + ABAS + TOGGLES) ---
+  // --- 4. FILTRO ---
   useEffect(() => {
     const term = searchTerm.toLowerCase();
     
-    // A. Filtro de Texto
     let filtered = allSnippets.filter(snippet => 
       (snippet.name && snippet.name.toLowerCase().includes(term)) ||
       (snippet.shortcut && snippet.shortcut.toLowerCase().includes(term)) ||
@@ -133,17 +136,15 @@ function App() {
       (snippet.author && snippet.author.toLowerCase().includes(term))
     );
 
-    // B. Filtro de Aba (Escopo)
     if (activeTab === 'MINE') {
       filtered = filtered.filter(s => s.user_id === session?.user.id);
     } else if (activeTab === 'FAVS') {
       filtered = filtered.filter(s => s.liked_by_me);
     }
 
-    // C. Filtro de Tipo (Toggles)
     filtered = filtered.filter(s => {
       const isAI = s.app === 'AI';
-      const isText = s.app === 'TEXT' || !s.app; // Default é TEXT
+      const isText = s.app === 'TEXT' || !s.app; 
 
       if (isAI && !showAI) return false;
       if (isText && !showText) return false;
@@ -154,7 +155,6 @@ function App() {
     setFilteredSnippets(filtered);
   }, [searchTerm, allSnippets, activeTab, showAI, showText, session]);
 
-  // Agrupamento (Mantido para lógica, mas visual simplificado)
   const groupedSnippets = filteredSnippets.reduce((groups, snippet) => {
     const file = snippet.sourceFile;
     if (!groups[file]) groups[file] = [];
@@ -217,70 +217,31 @@ function App() {
             <span className="search-count" style={{position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--neon-cyan)'}}>{filteredSnippets.length} RECORDS_FOUND</span>
           </div>
 
-          {/* BARRA DE CONTROLE (ABAS + TOGGLES) */}
+          {/* BARRA DE CONTROLE */}
           <div style={{ 
             display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem',
             marginTop: '1.5rem', borderBottom: '1px solid rgba(0, 243, 255, 0.2)', paddingBottom: '0.5rem'
           }}>
-            
-            {/* Esquerda: ABAS (Navegação) */}
             <div style={{ display: 'flex', gap: '1rem', overflowX: 'auto' }}>
               {['ALL', 'MINE', 'FAVS'].map((tab) => {
                 const isActive = activeTab === tab;
                 return (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    style={{
-                      background: isActive ? 'var(--neon-cyan)' : 'transparent',
-                      color: isActive ? '#000' : 'var(--neon-cyan)',
-                      border: 'none', padding: '0.5rem 1rem', cursor: 'pointer',
-                      fontWeight: 'bold', fontFamily: 'JetBrains Mono', fontSize: '0.9rem',
-                      clipPath: 'polygon(10% 0, 100% 0, 90% 100%, 0% 100%)',
-                      transition: 'all 0.2s', minWidth: '80px'
-                    }}
-                  >
+                  <button key={tab} onClick={() => setActiveTab(tab)} style={{ background: isActive ? 'var(--neon-cyan)' : 'transparent', color: isActive ? '#000' : 'var(--neon-cyan)', border: 'none', padding: '0.5rem 1rem', cursor: 'pointer', fontWeight: 'bold', fontFamily: 'JetBrains Mono', fontSize: '0.9rem', clipPath: 'polygon(10% 0, 100% 0, 90% 100%, 0% 100%)', transition: 'all 0.2s', minWidth: '80px' }}>
                     {tab}
                   </button>
                 )
               })}
             </div>
 
-            {/* Direita: TOGGLES (Filtros de Tipo) */}
             <div style={{ display: 'flex', gap: '0.5rem' }}>
-              
-              {/* Toggle AI */}
-              <button
-                onClick={() => setShowAI(!showAI)}
-                style={{
-                  background: showAI ? 'rgba(255, 0, 255, 0.2)' : 'transparent',
-                  border: `1px solid ${showAI ? 'var(--neon-pink)' : '#444'}`,
-                  color: showAI ? 'var(--neon-pink)' : '#666',
-                  padding: '0.3rem 0.8rem', cursor: 'pointer', borderRadius: '4px',
-                  fontFamily: 'JetBrains Mono', fontSize: '0.8rem',
-                  display: 'flex', alignItems: 'center', gap: '6px'
-                }}
-              >
+              <button onClick={() => setShowAI(!showAI)} style={{ background: showAI ? 'rgba(255, 0, 255, 0.2)' : 'transparent', border: `1px solid ${showAI ? 'var(--neon-pink)' : '#444'}`, color: showAI ? 'var(--neon-pink)' : '#666', padding: '0.3rem 0.8rem', cursor: 'pointer', borderRadius: '4px', fontFamily: 'JetBrains Mono', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: showAI ? 'var(--neon-pink)' : '#444' }}></span>
                 AI_MODE
               </button>
-
-              {/* Toggle TXT */}
-              <button
-                onClick={() => setShowText(!showText)}
-                style={{
-                  background: showText ? 'rgba(0, 243, 255, 0.2)' : 'transparent',
-                  border: `1px solid ${showText ? 'var(--neon-cyan)' : '#444'}`,
-                  color: showText ? 'var(--neon-cyan)' : '#666',
-                  padding: '0.3rem 0.8rem', cursor: 'pointer', borderRadius: '4px',
-                  fontFamily: 'JetBrains Mono', fontSize: '0.8rem',
-                  display: 'flex', alignItems: 'center', gap: '6px'
-                }}
-              >
+              <button onClick={() => setShowText(!showText)} style={{ background: showText ? 'rgba(0, 243, 255, 0.2)' : 'transparent', border: `1px solid ${showText ? 'var(--neon-cyan)' : '#444'}`, color: showText ? 'var(--neon-cyan)' : '#666', padding: '0.3rem 0.8rem', cursor: 'pointer', borderRadius: '4px', fontFamily: 'JetBrains Mono', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: showText ? 'var(--neon-cyan)' : '#444' }}></span>
                 TXT_MODE
               </button>
-
             </div>
           </div>
         </div>
@@ -289,10 +250,6 @@ function App() {
 
         {!loading && Object.entries(groupedSnippets).map(([fileName, snippets]) => (
           <div key={fileName} className="file-group">
-            
-            {/* REMOVIDO: Cabeçalho "Geral" foi deletado daqui */}
-            {/* Se quiser mostrar outros nomes de pasta no futuro, use: fileName !== 'Geral' && ... */}
-            
             <div className="snippets-grid" style={{ marginTop: '1rem' }}>
               {snippets.map((snippet) => (
                 <SnippetCard 

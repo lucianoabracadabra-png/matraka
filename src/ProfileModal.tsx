@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from './supabaseClient';
+import { useToast } from './ToastContext'; // <--- Importamos o Hook
 
 interface Props {
   isOpen: boolean;
@@ -9,10 +10,11 @@ interface Props {
 }
 
 export function ProfileModal({ isOpen, onClose, userId, onUpdate }: Props) {
+  const { addToast } = useToast(); // <--- Usamos o Hook
   const [loading, setLoading] = useState(false);
   const [username, setUsername] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
-  const [msg, setMsg] = useState('');
+  // Removi o estado 'msg', não precisamos mais dele
 
   useEffect(() => {
     if (isOpen) loadProfile();
@@ -33,6 +35,7 @@ export function ProfileModal({ isOpen, onClose, userId, onUpdate }: Props) {
       }
     } catch (error) {
       console.warn('Profile load error', error);
+      // Não precisa de toast aqui para não spamar se for só um perfil novo
     } finally {
       setLoading(false);
     }
@@ -41,7 +44,6 @@ export function ProfileModal({ isOpen, onClose, userId, onUpdate }: Props) {
   const handleSave = async (e: any) => {
     e.preventDefault();
     setLoading(true);
-    setMsg('');
 
     const updates = {
       id: userId,
@@ -53,14 +55,11 @@ export function ProfileModal({ isOpen, onClose, userId, onUpdate }: Props) {
     const { error } = await supabase.from('profiles').upsert(updates);
 
     if (error) {
-      setMsg('ERRO: ' + error.message);
+      addToast('ERRO AO ATUALIZAR: ' + error.message, 'error'); // <--- TOAST ERRO
     } else {
-      setMsg('IDENTITY_UPDATED');
+      addToast('IDENTIDADE ATUALIZADA COM SUCESSO', 'success'); // <--- TOAST SUCESSO
       onUpdate();
-      setTimeout(() => {
-        onClose();
-        setMsg('');
-      }, 1000);
+      onClose();
     }
     setLoading(false);
   };
@@ -126,15 +125,6 @@ export function ProfileModal({ isOpen, onClose, userId, onUpdate }: Props) {
               style={{ borderColor: 'var(--neon-purple)', color: 'var(--neon-purple)' }}
             />
           </div>
-
-          {msg && (
-            <div style={{ 
-              textAlign: 'center', fontFamily: 'JetBrains Mono', fontSize: '0.8rem',
-              color: msg.includes('ERRO') ? '#ff0055' : '#00ff00' 
-            }}>
-              {msg}
-            </div>
-          )}
 
           <button 
             type="submit" 
