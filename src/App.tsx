@@ -23,6 +23,7 @@ interface Snippet {
 }
 
 function App() {
+  const [activeTab, setActiveTab] = useState('ALL');
   const [session, setSession] = useState<Session | null>(null);
   const [allSnippets, setAllSnippets] = useState<Snippet[]>([]);
   const [filteredSnippets, setFilteredSnippets] = useState<Snippet[]>([]);
@@ -32,21 +33,24 @@ function App() {
   // MODAIS & STATES
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [macroToEdit, setMacroToEdit] = useState<Snippet | null>(null); // <--- ESTADO DE EDIÇÃO
+  const [macroToEdit, setMacroToEdit] = useState<Snippet | null>(null);
 
   const [myUsername, setMyUsername] = useState('Loading...');
 
-  // --- GERENCIAMENTO DE SESSÃO ---
+  // --- 1. GERENCIAMENTO DE SESSÃO (Corrigido) ---
   useEffect(() => {
+    // Pega a sessão inicial
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session) fetchUserProfile(session.user.id);
     });
-    
+
+    // Escuta mudanças (Login/Logout)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       if (session) fetchUserProfile(session.user.id);
     });
+
     return () => subscription.unsubscribe();
   }, []);
 
@@ -57,7 +61,7 @@ function App() {
     }
   };
 
-  // --- BUSCA DE DADOS ---
+  // --- 2. BUSCA DE DADOS ---
   const fetchMacros = useCallback(async () => {
     if (!session) return;
     setLoading(true);
@@ -102,31 +106,42 @@ function App() {
     fetchMacros();
   }, [fetchMacros]);
 
-  // --- ACTIONS ---
-  
-  // Função que abre o modal já preenchido
+  // --- 3. ACTIONS ---
   const handleEdit = (snippet: Snippet) => {
     setMacroToEdit(snippet);
     setIsModalOpen(true);
   };
 
-  // Função para abrir modal limpo (criar nova)
   const handleCreateNew = () => {
-    setMacroToEdit(null); // Limpa edição anterior
+    setMacroToEdit(null);
     setIsModalOpen(true);
   };
 
-  // --- FILTRO ---
+  // --- 4. FILTRO HÍBRIDO (BUSCA + ABAS) ---
   useEffect(() => {
     const term = searchTerm.toLowerCase();
-    const filtered = allSnippets.filter(snippet => 
+    
+    // Filtra por texto
+    let filtered = allSnippets.filter(snippet => 
       (snippet.name && snippet.name.toLowerCase().includes(term)) ||
       (snippet.shortcut && snippet.shortcut.toLowerCase().includes(term)) ||
       (snippet.text && snippet.text?.toLowerCase().includes(term)) ||
       (snippet.author && snippet.author.toLowerCase().includes(term))
     );
+
+    // Filtra por Aba
+    if (activeTab === 'MINE') {
+      filtered = filtered.filter(s => s.user_id === session?.user.id);
+    } else if (activeTab === 'FAVS') {
+      filtered = filtered.filter(s => s.liked_by_me);
+    } else if (activeTab === 'AI') {
+      filtered = filtered.filter(s => s.app === 'AI');
+    } else if (activeTab === 'TEXT') {
+      filtered = filtered.filter(s => s.app === 'TEXT' || !s.app);
+    }
+
     setFilteredSnippets(filtered);
-  }, [searchTerm, allSnippets]);
+  }, [searchTerm, allSnippets, activeTab, session]);
 
   const groupedSnippets = filteredSnippets.reduce((groups, snippet) => {
     const file = snippet.sourceFile;
@@ -189,6 +204,38 @@ function App() {
             <input type="text" className="search-input" placeholder="SEARCH_DATABASE..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
             <span className="search-count" style={{position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--neon-cyan)'}}>{filteredSnippets.length} RECORDS_FOUND</span>
           </div>
+
+          {/* BARRA DE NAVEGAÇÃO TÁTICA (ABAS) - AGORA DENTRO DO HEADER */}
+          <div style={{ 
+            display: 'flex', gap: '1rem', marginTop: '1.5rem', 
+            borderBottom: '1px solid rgba(0, 243, 255, 0.2)', paddingBottom: '0.5rem',
+            overflowX: 'auto'
+          }}>
+            {['ALL', 'MINE', 'FAVS', 'AI', 'TEXT'].map((tab) => {
+              const isActive = activeTab === tab;
+              return (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  style={{
+                    background: isActive ? 'var(--neon-cyan)' : 'transparent',
+                    color: isActive ? '#000' : 'var(--neon-cyan)',
+                    border: 'none',
+                    padding: '0.5rem 1rem',
+                    cursor: 'pointer',
+                    fontWeight: 'bold',
+                    fontFamily: 'JetBrains Mono',
+                    fontSize: '0.9rem',
+                    clipPath: 'polygon(10% 0, 100% 0, 90% 100%, 0% 100%)',
+                    transition: 'all 0.2s',
+                    minWidth: '80px'
+                  }}
+                >
+                  {tab}
+                </button>
+              )
+            })}
+          </div>
         </div>
 
         {loading && <div className="loading"><div className="spinner"></div><p>LOADING_SYSTEM...</p></div>}
@@ -203,7 +250,7 @@ function App() {
                   snippet={snippet} 
                   userId={session.user.id} 
                   onDelete={() => fetchMacros()}
-                  onEdit={handleEdit} // <--- Passando a função de editar
+                  onEdit={handleEdit}
                   initialLikes={snippet.likes_count}
                   initialLiked={snippet.liked_by_me}
                 />
@@ -217,7 +264,7 @@ function App() {
           onClose={() => setIsModalOpen(false)}
           onSuccess={() => fetchMacros()}
           userId={session.user.id}
-          macroToEdit={macroToEdit} // <--- Passando os dados para edição
+          macroToEdit={macroToEdit}
         />
 
         <ProfileModal 
