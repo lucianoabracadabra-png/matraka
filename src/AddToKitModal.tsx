@@ -7,7 +7,7 @@ interface Props {
   onClose: () => void;
   userId: string;
   macroId: string | null;
-  macroKits?: string[]; // IDs dos kits onde a macro já está
+  macroKits?: string[];
 }
 
 export function AddToKitModal({ isOpen, onClose, userId, macroId, macroKits = [] }: Props) {
@@ -20,7 +20,7 @@ export function AddToKitModal({ isOpen, onClose, userId, macroId, macroKits = []
   useEffect(() => {
     if (isOpen) {
       fetchKits();
-      setLocalMacroKits(macroKits); // Sincroniza estado local
+      setLocalMacroKits(macroKits);
     }
   }, [isOpen, macroKits]);
 
@@ -49,20 +49,16 @@ export function AddToKitModal({ isOpen, onClose, userId, macroId, macroKits = []
     const isAdded = localMacroKits.includes(kitId);
 
     if (isAdded) {
-      // REMOVER
       const { error } = await supabase.from('kit_items').delete().eq('kit_id', kitId).eq('macro_id', macroId);
-      if (error) {
-        addToast('ERRO AO REMOVER', 'error');
-      } else {
+      if (error) addToast('ERRO AO REMOVER', 'error');
+      else {
         setLocalMacroKits(prev => prev.filter(id => id !== kitId));
         addToast('REMOVIDO DO KIT', 'info');
       }
     } else {
-      // ADICIONAR
       const { error } = await supabase.from('kit_items').insert({ kit_id: kitId, macro_id: macroId });
-      if (error) {
-        addToast('ERRO AO ADICIONAR', 'error');
-      } else {
+      if (error) addToast('ERRO AO ADICIONAR', 'error');
+      else {
         setLocalMacroKits(prev => [...prev, kitId]);
         addToast('ADICIONADO AO KIT', 'success');
       }
@@ -71,6 +67,25 @@ export function AddToKitModal({ isOpen, onClose, userId, macroId, macroKits = []
   };
 
   if (!isOpen) return null;
+
+  // ESTILO DOS BOTÕES DA LISTA (CYBERPUNK)
+  const listBtnStyle = (isAdded: boolean) => ({
+    background: isAdded ? 'rgba(0, 255, 0, 0.05)' : 'rgba(0, 0, 0, 0.3)',
+    border: isAdded ? '1px solid #00ff00' : '1px solid #444',
+    color: isAdded ? '#00ff00' : '#888',
+    padding: '10px 12px',
+    borderRadius: '2px', // Cantos mais retos
+    textAlign: 'left' as const,
+    cursor: 'pointer',
+    fontFamily: 'JetBrains Mono',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    transition: 'all 0.2s',
+    fontSize: '0.8rem',
+    textTransform: 'uppercase' as const,
+    boxShadow: isAdded ? '0 0 5px rgba(0,255,0,0.2)' : 'none'
+  });
 
   return (
     <div style={{
@@ -88,9 +103,8 @@ export function AddToKitModal({ isOpen, onClose, userId, macroId, macroKits = []
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--neon-pink)', cursor: 'pointer', fontSize: '1.2rem' }}>✕</button>
         </div>
 
-        {/* LISTA DE KITS */}
         <div style={{ maxHeight: '250px', overflowY: 'auto', marginBottom: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', paddingRight: '5px' }}>
-          {kits.length === 0 && <p style={{ color: '#666', fontSize: '0.8rem', textAlign: 'center', padding: '1rem' }}>NENHUMA PASTA ENCONTRADA</p>}
+          {kits.length === 0 && <p style={{ color: '#666', fontSize: '0.8rem', textAlign: 'center', padding: '1rem', fontFamily:'JetBrains Mono' }}>NO_KITS_FOUND</p>}
           
           {kits.map(kit => {
             const isAdded = localMacroKits.includes(kit.id);
@@ -99,38 +113,31 @@ export function AddToKitModal({ isOpen, onClose, userId, macroId, macroKits = []
                 key={kit.id}
                 onClick={() => handleToggleKit(kit.id)}
                 disabled={loading}
-                style={{
-                  background: isAdded ? 'rgba(0, 255, 0, 0.1)' : 'rgba(255, 255, 255, 0.03)',
-                  border: isAdded ? '1px solid #00ff00' : '1px solid #333',
-                  color: isAdded ? '#00ff00' : '#888',
-                  padding: '12px', borderRadius: '4px',
-                  textAlign: 'left', cursor: 'pointer', fontFamily: 'JetBrains Mono',
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  transition: 'all 0.2s'
-                }}
+                style={listBtnStyle(isAdded)}
                 onMouseEnter={(e) => {
                    if(!isAdded) {
                      e.currentTarget.style.borderColor = 'var(--neon-cyan)';
-                     e.currentTarget.style.color = '#fff';
+                     e.currentTarget.style.color = 'var(--neon-cyan)';
+                     e.currentTarget.style.background = 'rgba(0, 243, 255, 0.05)';
                    }
                 }}
                 onMouseLeave={(e) => {
                    if(!isAdded) {
-                     e.currentTarget.style.borderColor = '#333';
+                     e.currentTarget.style.borderColor = '#444';
                      e.currentTarget.style.color = '#888';
+                     e.currentTarget.style.background = 'rgba(0, 0, 0, 0.3)';
                    }
                 }}
               >
                 <span style={{ fontWeight: 'bold' }}>📁 {kit.name}</span>
-                <span style={{ fontSize: '0.7rem', fontWeight: 'bold' }}>
-                  {isAdded ? 'REMOVER [-]' : 'ADICIONAR [+]'}
+                <span style={{ fontSize: '0.7rem', fontWeight: 'bold', opacity: isAdded ? 1 : 0.6 }}>
+                  {isAdded ? '[ ADDED ]' : '[ SELECT ]'}
                 </span>
               </button>
             )
           })}
         </div>
 
-        {/* CRIAR NOVO KIT */}
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1.5rem' }}>
           <label className="cyber-label">CREATE_NEW_FOLDER</label>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -138,8 +145,8 @@ export function AddToKitModal({ isOpen, onClose, userId, macroId, macroKits = []
               className="cyber-input" 
               value={newKitName} 
               onChange={e => setNewKitName(e.target.value)} 
-              placeholder="Nome do Kit..."
-              style={{ padding: '10px' }}
+              placeholder="NOME DO KIT..."
+              style={{ padding: '10px', fontFamily:'JetBrains Mono', fontSize:'0.8rem' }}
             />
             <button 
               onClick={handleCreateKit}

@@ -165,12 +165,10 @@ function App() {
     }
   };
 
-  // Helper para saber se a macro está em ALGUM kit (para pintar o botão de verde)
   const isMacroInAnyKit = (macroId: string) => {
     return Object.values(kitItems).some(set => set.has(macroId));
   };
 
-  // Helper para passar pro modal saber em quais kits a macro JÁ está
   const getMacroKits = (macroId: string | null) => {
     if (!macroId) return [];
     return Object.keys(kitItems).filter(kitId => kitItems[kitId].has(macroId));
@@ -221,14 +219,22 @@ function App() {
 
       <div className="container">
         
-        {/* HEADER */}
+        {/* HEADER CORRIGIDO (LOGO + CORES) */}
         <div className="header">
           <div className="header-top" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
             <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+              
+              {/* LOGO SVG RESTAURADO */}
               <div style={{ width: '64px', height: '64px', background: 'rgba(5, 5, 10, 0.8)', border: '1px solid var(--neon-cyan)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 20px rgba(0, 243, 255, 0.2)', transform: 'skewX(-10deg)', position: 'relative', flexShrink: 0 }}>
                 <div style={{ position: 'absolute', top: '-1px', right: '-1px', width: '10px', height: '10px', background: 'var(--neon-pink)', clipPath: 'polygon(0 0, 100% 0, 100% 100%)' }}></div>
-                <h1 style={{margin:0, fontSize:'2rem', color:'var(--neon-cyan)'}}>MK</h1>
+                <svg width="42" height="42" viewBox="0 0 100 100" fill="none" strokeWidth="2" style={{ transform: 'skewX(10deg)' }}>
+                  <path d="M30 30 L60 30 L90 50 L60 60 L60 80 L30 70 Z" stroke="var(--neon-cyan)" fill="rgba(0, 243, 255, 0.1)" strokeLinejoin="round" />
+                  <path d="M55 40 L65 40 L60 50 Z" fill="var(--neon-pink)" stroke="none" />
+                  <path d="M10 50 L40 50 L50 60" stroke="var(--neon-purple)" strokeWidth="3" strokeLinecap="round" />
+                  <path d="M30 85 L70 85" stroke="var(--neon-cyan)" strokeDasharray="2 4" />
+                </svg>
               </div>
+
               <div>
                 <h1 className="title" style={{ margin: 0, fontSize: '3rem', lineHeight: 1 }}>MATRAKA</h1>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '0.5rem' }}>
@@ -244,6 +250,7 @@ function App() {
              <input type="text" className="search-input" placeholder="SEARCH_DATABASE..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
           </div>
 
+          {/* BARRA DE NAVEGAÇÃO E TOGGLES CORRIGIDOS */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginTop: '1.5rem', borderBottom: '1px solid rgba(0, 243, 255, 0.2)', paddingBottom: '0.5rem' }}>
             <div style={{ display: 'flex', gap: '1rem', overflowX: 'auto' }}>
               {['ALL', 'MINE', 'FAVS', 'KITS'].map((tab) => {
@@ -257,18 +264,19 @@ function App() {
               })}
             </div>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button onClick={() => setShowAI(!showAI)} style={{ border: `1px solid ${showAI ? 'var(--neon-pink)' : '#444'}`, color: showAI ? 'var(--neon-pink)' : '#666', background:'transparent', padding: '0.3rem 0.8rem', cursor: 'pointer', fontFamily: 'JetBrains Mono', fontSize: '0.8rem' }}>AI</button>
-              <button onClick={() => setShowText(!showText)} style={{ border: `1px solid ${showText ? 'var(--neon-cyan)' : '#444'}`, color: showText ? 'var(--neon-cyan)' : '#666', background:'transparent', padding: '0.3rem 0.8rem', cursor: 'pointer', fontFamily: 'JetBrains Mono', fontSize: '0.8rem' }}>TXT</button>
+              {/* TOGGLES COM CORES CORRETAS (ROSA PARA AI) */}
+              <button onClick={() => setShowAI(!showAI)} style={{ border: `1px solid ${showAI ? 'var(--neon-pink)' : '#444'}`, color: showAI ? 'var(--neon-pink)' : '#666', background: showAI ? 'rgba(255,0,255,0.1)' : 'transparent', padding: '0.3rem 0.8rem', cursor: 'pointer', fontFamily: 'JetBrains Mono', fontSize: '0.8rem', borderRadius:'4px' }}>AI_MODE</button>
+              <button onClick={() => setShowText(!showText)} style={{ border: `1px solid ${showText ? 'var(--neon-cyan)' : '#444'}`, color: showText ? 'var(--neon-cyan)' : '#666', background: showText ? 'rgba(0,243,255,0.1)' : 'transparent', padding: '0.3rem 0.8rem', cursor: 'pointer', fontFamily: 'JetBrains Mono', fontSize: '0.8rem', borderRadius:'4px' }}>TXT_MODE</button>
             </div>
           </div>
 
           {activeTab === 'KITS' && (
               <div style={{ display: 'flex', gap: '0.8rem', padding: '1rem 0', overflowX: 'auto', borderBottom: '1px solid rgba(255,255,255,0.1)', animation: 'fadeIn 0.3s' }}>
-                  <button onClick={() => setIsAddToKitOpen(true)} style={{ background: 'var(--neon-pink)', color: '#000', border: 'none', borderRadius: '4px', padding: '6px 12px', cursor: 'pointer', fontWeight:'bold', fontSize:'0.8rem' }}>+ NOVO KIT</button>
+                  <button onClick={() => setIsAddToKitOpen(true)} style={{ background: 'var(--neon-pink)', color: '#000', border: 'none', borderRadius: '4px', padding: '6px 12px', cursor: 'pointer', fontWeight:'bold', fontSize:'0.8rem', fontFamily: 'JetBrains Mono' }}>+ NOVO KIT</button>
                   {myKits.length === 0 && <span style={{color:'#666', fontSize:'0.8rem', alignSelf:'center'}}>Crie seu primeiro kit!</span>}
                   {myKits.map(kit => (
-                      <div key={kit.id} style={{display:'flex', alignItems:'center', background: selectedKitId === kit.id ? 'rgba(0, 243, 255, 0.2)' : 'rgba(255,255,255,0.05)', borderRadius:'4px', border: selectedKitId === kit.id ? '1px solid var(--neon-cyan)' : '1px solid #444'}}>
-                          <button onClick={() => setSelectedKitId(kit.id)} style={{ background: 'transparent', border: 'none', color: '#fff', padding: '6px 12px', cursor: 'pointer', fontFamily: 'JetBrains Mono', fontSize: '0.8rem' }}>
+                      <div key={kit.id} style={{display:'flex', alignItems:'center', background: selectedKitId === kit.id ? 'rgba(0, 243, 255, 0.1)' : 'rgba(255,255,255,0.05)', borderRadius:'4px', border: selectedKitId === kit.id ? '1px solid var(--neon-cyan)' : '1px solid #444'}}>
+                          <button onClick={() => setSelectedKitId(kit.id)} style={{ background: 'transparent', border: 'none', color: selectedKitId === kit.id ? 'var(--neon-cyan)':'#fff', padding: '6px 12px', cursor: 'pointer', fontFamily: 'JetBrains Mono', fontSize: '0.8rem', fontWeight: selectedKitId === kit.id ? 'bold':'normal' }}>
                               📁 {kit.name} <span style={{opacity:0.5}}>({kitItems[kit.id]?.size || 0})</span>
                           </button>
                           <button onClick={() => handleDeleteKit(kit.id, kit.name)} style={{ background:'transparent', border:'none', color:'#666', cursor:'pointer', padding:'0 8px', fontSize:'10px' }} title="Deletar Kit">✕</button>
@@ -294,7 +302,7 @@ function App() {
                   onAddToKit={handleAddToKit}
                   initialLikes={snippet.likes_count}
                   initialLiked={snippet.liked_by_me}
-                  isInKit={isMacroInAnyKit(snippet.id)} // <--- NOVA PROP: Botão verde
+                  isInKit={isMacroInAnyKit(snippet.id)}
                 />
               ))}
             </div>
@@ -305,13 +313,12 @@ function App() {
         <ProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} userId={session.user.id} onUpdate={() => { fetchUserProfile(session.user.id); fetchMacros(); }} />
         <InputVariableModal isOpen={isInputModalOpen} onClose={() => setIsInputModalOpen(false)} variables={varsToProcess} originalText={macroToProcess?.text || ''} />
         
-        {/* Passamos as funções para atualizar corretamente */}
         <AddToKitModal 
             isOpen={isAddToKitOpen} 
             onClose={() => { setIsAddToKitOpen(false); fetchMacros(); }} 
             userId={session.user.id}
             macroId={macroIdToAdd}
-            macroKits={getMacroKits(macroIdToAdd)} // <--- NOVA PROP: Quais kits ela já tem
+            macroKits={getMacroKits(macroIdToAdd)}
         />
 
       </div>
