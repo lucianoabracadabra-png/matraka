@@ -1,111 +1,77 @@
 import { useState } from 'react';
 import { supabase } from './supabaseClient';
+import { useToast } from './ToastContext'; // <--- Importamos o Toast
 
 export function Auth() {
+  const { addToast } = useToast(); // <--- Hook
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
 
   const handleLogin = async (e: any) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    
+    // Validação básica
+    if (!email) {
+      addToast('DIGITE UM EMAIL VÁLIDO', 'error');
+      setLoading(false);
+      return;
+    }
 
-    if (error) alert(error.message);
-    setLoading(false);
-  };
-
-  const handleSignUp = async (e: any) => {
-    e.preventDefault();
-    setLoading(true);
-    const { error } = await supabase.auth.signUp({
+    const { error } = await supabase.auth.signInWithOtp({ 
       email,
-      password,
+      options: {
+        // Redireciona para o site atual após o clique no email
+        emailRedirectTo: window.location.origin 
+      }
     });
 
     if (error) {
-      alert(error.message);
+      addToast('ERRO NO LOGIN: ' + error.message, 'error');
     } else {
-      alert('Cadastro realizado! Se o login não for automático, verifique seu e-mail.');
+      addToast('LINK MÁGICO ENVIADO! VERIFIQUE SEU EMAIL.', 'success');
+      addToast('Aguardando confirmação...', 'info');
     }
     setLoading(false);
   };
 
   return (
     <div className="auth-container" style={{
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      minHeight: '80vh'
+      background: 'rgba(5, 5, 10, 0.9)',
+      padding: '2rem',
+      borderRadius: '8px',
+      border: '1px solid var(--neon-purple)',
+      boxShadow: '0 0 20px rgba(188, 19, 254, 0.2)',
+      textAlign: 'center',
+      maxWidth: '400px',
+      width: '100%'
     }}>
-      <div className="snippet-card card-ai" style={{ maxWidth: '400px', width: '100%', padding: '2rem' }}>
-        <h2 className="title" style={{ fontSize: '2rem', textAlign: 'center', marginBottom: '2rem' }}>
-          Matraka
-        </h2>
-        <p style={{ color: '#94a3b8', textAlign: 'center', marginBottom: '2rem' }}>
-          Identifique-se para acessar o sistema
-        </p>
-
-        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <div>
-            <input
-              className="search-input"
-              type="email"
-              placeholder="Seu e-mail"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-          <div>
-            <input
-              className="search-input"
-              type="password"
-              placeholder="Sua senha"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-          
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              marginTop: '1rem',
-              background: 'linear-gradient(135deg, #a855f7, #06b6d4)',
-              border: 'none',
-              padding: '1rem',
-              borderRadius: '8px',
-              color: 'white',
-              fontWeight: 'bold',
-              cursor: loading ? 'wait' : 'pointer'
-            }}
-          >
-            {loading ? 'Carregando...' : 'Entrar'}
-          </button>
-
-          <button
-            type="button"
-            onClick={handleSignUp}
-            disabled={loading}
-            style={{
-              background: 'transparent',
-              border: '1px solid #475569',
-              padding: '0.8rem',
-              borderRadius: '8px',
-              color: '#94a3b8',
-              cursor: loading ? 'wait' : 'pointer',
-              fontSize: '0.9rem'
-            }}
-          >
-            Não tem conta? Cadastre-se
-          </button>
-        </form>
-      </div>
+      <h1 className="title" style={{ marginBottom: '0.5rem' }}>MATRAKA</h1>
+      <p style={{ color: '#fff', fontFamily: 'JetBrains Mono', marginBottom: '2rem', fontSize: '0.9rem' }}>
+        SYSTEM.LOGIN_REQUIRED
+      </p>
+      
+      <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <input
+          className="search-input"
+          type="email"
+          placeholder="SEU_EMAIL@CORP.COM"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          style={{ textAlign: 'center' }}
+        />
+        <button 
+          className="btn-neon" 
+          disabled={loading}
+          style={{ width: '100%', justifyContent: 'center', padding: '1rem' }}
+        >
+          {loading ? 'SENDING_LINK...' : 'SEND_MAGIC_LINK'}
+        </button>
+      </form>
+      
+      <p style={{ marginTop: '1.5rem', color: '#666', fontSize: '0.75rem', fontFamily: 'JetBrains Mono' }}>
+        * ACESSO RESTRITO A OPERADORES AUTORIZADOS
+      </p>
     </div>
   );
 }

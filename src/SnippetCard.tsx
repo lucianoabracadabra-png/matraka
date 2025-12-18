@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from './supabaseClient';
 import { useToast } from './ToastContext';
 
@@ -6,7 +6,7 @@ interface Props {
   snippet: any;
   userId: string;
   onDelete: () => void;
-  onEdit: (snippet: any) => void; // <--- NOVA PROP: Função que abre o modal
+  onEdit: (snippet: any) => void;
   initialLikes: number;
   initialLiked: boolean;
 }
@@ -18,6 +18,17 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, initialLikes, i
   const [likesCount, setLikesCount] = useState(initialLikes);
   const [isLiked, setIsLiked] = useState(initialLiked);
   const [isLikeLoading, setIsLikeLoading] = useState(false);
+
+  // --- NOVO: Estado para confirmação de Delete ---
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+
+  // Reseta o botão de confirmar após 3 segundos se o usuário não clicar
+  useEffect(() => {
+    if (deleteConfirm) {
+      const timer = setTimeout(() => setDeleteConfirm(false), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [deleteConfirm]);
 
   // --- UTILS ---
   const decodeHtml = (html: string | undefined) => {
@@ -50,7 +61,6 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, initialLikes, i
 
   // --- ACTIONS ---
   
-  // NOVA FUNÇÃO: Copiar para Clipboard
   const handleCopy = () => {
     const textToCopy = decodeHtml(snippet.text);
     navigator.clipboard.writeText(textToCopy)
@@ -72,7 +82,6 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, initialLikes, i
         await supabase.from('macro_likes').delete().eq('user_id', userId).eq('macro_id', snippet.id);
       }
     } catch (error) {
-      console.error(error);
       setIsLiked(!newLikedState);
       setLikesCount(prev => !newLikedState ? prev + 1 : prev - 1);
       addToast('ERRO AO CURTIR', 'error');
@@ -83,7 +92,8 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, initialLikes, i
 
   const handleClone = async () => {
     if (isCloning) return;
-    if (!confirm(`CONFIRMAR CLONAGEM DE: "${snippet.name}"?`)) return;
+    // Aqui ainda mantemos o confirm nativo por ser uma ação de criação complexa? 
+    // Ou podemos usar o mesmo esquema de clique duplo. Vamos manter simples por enquanto.
     setIsCloning(true);
     const { error } = await supabase.from('macros').insert({
       user_id: userId,
@@ -104,8 +114,15 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, initialLikes, i
     setIsCloning(false);
   };
 
-  const handleDelete = async () => {
-    if (!confirm('CONFIRMA DELETAR?')) return;
+  // --- LÓGICA DE DELETAR COM BOTÃO DUPLO ---
+  const handleDeleteClick = async () => {
+    // 1. Se ainda não confirmou, ativa o modo de confirmação e para por aqui
+    if (!deleteConfirm) {
+      setDeleteConfirm(true);
+      return; 
+    }
+
+    // 2. Se já estava confirmando (clicou pela 2ª vez), deleta de verdade
     setIsDeleting(true);
     const { error } = await supabase.from('macros').delete().eq('id', snippet.id);
     if (error) {
@@ -190,17 +207,27 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, initialLikes, i
           {/* EDIT & DELETE (Só para donos) */}
           {isOwner && (
             <>
-              {/* EDIT BUTTON */}
-              <button 
-                onClick={() => onEdit(snippet)} 
-                style={{ background: 'rgba(255, 255, 0, 0.1)', border: '1px solid rgba(255, 255, 0, 0.5)', color: '#ffff00', cursor: 'pointer', padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem' }} 
-                title="EDIT"
-              >
+              <button onClick={() => onEdit(snippet)} style={{ background: 'rgba(255, 255, 0, 0.1)', border: '1px solid rgba(255, 255, 0, 0.5)', color: '#ffff00', cursor: 'pointer', padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem' }} title="EDIT">
                 ✎
               </button>
               
-              <button onClick={handleDelete} style={{ background: 'rgba(255, 0, 0, 0.1)', border: '1px solid rgba(255, 0, 0, 0.5)', color: '#ff5555', cursor: 'pointer', padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem' }} title="DELETE">
-                ✕
+              {/* BOTÃO DE DELETAR INTELIGENTE */}
+              <button 
+                onClick={handleDeleteClick} 
+                style={{ 
+                  background: deleteConfirm ? 'rgba(255, 0, 0, 0.3)' : 'rgba(255, 0, 0, 0.1)', 
+                  border: deleteConfirm ? '1px solid #ff0000' : '1px solid rgba(255, 0, 0, 0.5)', 
+                  color: deleteConfirm ? '#fff' : '#ff5555', 
+                  cursor: 'pointer', 
+                  padding: '4px 8px', 
+                  borderRadius: '4px', 
+                  fontSize: '0.75rem',
+                  fontWeight: deleteConfirm ? 'bold' : 'normal',
+                  transition: 'all 0.2s'
+                }} 
+                title="DELETE"
+              >
+                {deleteConfirm ? 'CONFIRM?' : '✕'}
               </button>
             </>
           )}
