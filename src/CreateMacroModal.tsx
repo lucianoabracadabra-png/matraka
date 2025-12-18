@@ -18,7 +18,7 @@ export function CreateMacroModal({ isOpen, onClose, onSuccess, userId, macroToEd
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [shortcut, setShortcut] = useState('');
-  const [appCategory, setAppCategory] = useState('TEXT');
+  const [appCategory, setAppCategory] = useState('TEXT'); // 'TEXT', 'AI', 'CODE'
 
   const [showWaitMenu, setShowWaitMenu] = useState(false);
 
@@ -61,11 +61,16 @@ export function CreateMacroModal({ isOpen, onClose, onSuccess, userId, macroToEd
     setLoading(true);
     let error;
 
+    // DEFINE O TIPO PARA O BANCO DE DADOS
+    // Se a categoria for AI, o tipo TEM QUE SER 'ai' para o script executar corretamente.
+    const macroType = appCategory === 'AI' ? 'ai' : 'text';
+
     const payload = {
       title,
       content,
       shortcut,
       app_category: appCategory,
+      type: macroType, // <--- CRÍTICO: ISSO SALVA COMO MACRO DE IA
       updated_at: new Date()
     };
 
@@ -79,7 +84,7 @@ export function CreateMacroModal({ isOpen, onClose, onSuccess, userId, macroToEd
     } else {
       const { error: insertError } = await supabase
         .from('macros')
-        .insert({ ...payload, user_id: userId, type: 'text', is_public: false });
+        .insert({ ...payload, user_id: userId, is_public: false });
       error = insertError;
     }
 
@@ -120,19 +125,24 @@ export function CreateMacroModal({ isOpen, onClose, onSuccess, userId, macroToEd
           
           <div>
             <label className="cyber-label">PROTOCOL_NAME</label>
-            <input className="cyber-input" placeholder="Ex: Saudação Bom Dia" value={title} onChange={e => setTitle(e.target.value)} autoFocus />
+            <input className="cyber-input" placeholder="Ex: Analisar Texto Cliente" value={title} onChange={e => setTitle(e.target.value)} autoFocus />
           </div>
           
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div>
               <label className="cyber-label">TRIGGER_KEY</label>
-              <input className="cyber-input" placeholder="Ex: /bomdia" value={shortcut} onChange={e => setShortcut(e.target.value)} />
+              <input className="cyber-input" placeholder="Ex: /ia-analise" value={shortcut} onChange={e => setShortcut(e.target.value)} />
             </div>
             <div>
               <label className="cyber-label">CATEGORY</label>
               <div className="type-selector">
                 {['TEXT', 'AI', 'CODE'].map((type) => (
-                  <div key={type} className={`type-option ${appCategory === type ? 'active' : ''}`} onClick={() => setAppCategory(type)}>
+                  <div 
+                    key={type} 
+                    className={`type-option ${appCategory === type ? 'active' : ''}`} 
+                    onClick={() => setAppCategory(type)}
+                    style={type === 'AI' && appCategory === 'AI' ? { borderColor: '#a855f7', color: '#a855f7', boxShadow: '0 0 10px #a855f7' } : {}}
+                  >
                     {type}
                   </div>
                 ))}
@@ -148,13 +158,24 @@ export function CreateMacroModal({ isOpen, onClose, onSuccess, userId, macroToEd
               background: 'rgba(0, 0, 0, 0.3)', padding: '0.5rem', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.1)'
             }}>
               
-              <ToolButton label="CURSOR" icon="⌶" onClick={() => insertTag('[cursor]')} color="var(--neon-cyan)" />
-              <ToolButton label="CLIPBOARD" icon="📋" onClick={() => insertTag('[paste]')} color="var(--neon-cyan)" />
+              {/* BOTÕES ESPECÍFICOS DE IA SE ESTIVER NO MODO IA */}
+              {appCategory === 'AI' ? (
+                <ToolButton 
+                  label="{ SELECTION }" 
+                  icon="✨" 
+                  onClick={() => insertTag('{selection}')} 
+                  color="#a855f7" // Roxo AI
+                />
+              ) : (
+                <>
+                  <ToolButton label="CURSOR" icon="⌶" onClick={() => insertTag('[cursor]')} color="var(--neon-cyan)" />
+                  <ToolButton label="CLIPBOARD" icon="📋" onClick={() => insertTag('[paste]')} color="var(--neon-cyan)" />
+                </>
+              )}
               
               <div style={{ width: '1px', background: 'rgba(255,255,255,0.2)', margin: '0 0.2rem' }}></div>
               
               <ToolButton label="AGENTE" icon="🎧" onClick={() => insertTag('[agente]')} color="var(--neon-purple)" />
-              {/* Botão Input: Insere e seleciona 'Título' para facilitar edição */}
               <ToolButton 
                 label="INPUT" 
                 icon="✍" 
@@ -168,7 +189,7 @@ export function CreateMacroModal({ isOpen, onClose, onSuccess, userId, macroToEd
                     setTimeout(() => {
                       if (textareaRef.current) {
                         textareaRef.current.focus();
-                        textareaRef.current.setSelectionRange(start + 7, start + 7 + 6); // Seleciona "Título"
+                        textareaRef.current.setSelectionRange(start + 7, start + 7 + 6); 
                       }
                     }, 0);
                   }
@@ -180,7 +201,6 @@ export function CreateMacroModal({ isOpen, onClose, onSuccess, userId, macroToEd
 
               <ToolButton label="DOM" icon="🕸️" onClick={() => insertTag('[dom:.classe]')} color="#f59e0b" />
               <ToolButton label="ENTER" icon="↵" onClick={() => insertTag('[enter]')} color="var(--neon-cyan)" />
-              <ToolButton label="TAB" icon="⇥" onClick={() => insertTag('[tab]')} color="var(--neon-cyan)" />
               
               <div style={{ position: 'relative' }}>
                 <ToolButton 
@@ -221,7 +241,7 @@ export function CreateMacroModal({ isOpen, onClose, onSuccess, userId, macroToEd
             <textarea 
               ref={textareaRef}
               className="cyber-input cyber-textarea" 
-              placeholder="Digite o texto da macro... Use [input:Nome] para variáveis." 
+              placeholder={appCategory === 'AI' ? "Digite o prompt para a IA... Use {selection} para o texto selecionado." : "Digite o texto da macro... Use [input:Nome] para variáveis."}
               value={content} onChange={e => setContent(e.target.value)}
               style={{ minHeight: '180px', fontFamily: 'monospace', fontSize: '0.9rem', lineHeight: '1.5' }}
             />

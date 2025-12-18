@@ -41,46 +41,38 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
     if (!text) return '';
     let newText = text;
 
-    // --- 1. CONTROLE DE TEMPO ([wait:X] ou [wait+Xs]) ---
+    // --- SINTAXE V15 (MATRAKA ENGINE) ---
+
+    // 1. TEMPO [wait:1] ou [wait+1s]
     newText = newText.replace(/\[wait:([\d\.]+)\]/gi, '<span class="macro-tag tag-wait">⏳ $1s</span>');
     newText = newText.replace(/\[wait\+([\d\.]+)s\]/gi, '<span class="macro-tag tag-wait">⏳ +$1s</span>');
 
-    // --- 2. INTERAÇÃO E DADOS ---
-    // [input:...] -> Rosa Neon (Destaque visual)
+    // 2. INPUT [input:Label] (Rosa Neon)
     newText = newText.replace(/\[input:([^\]]+)\]/gi, '<span class="macro-tag" style="border-color:var(--neon-pink); color:var(--neon-pink); background:rgba(255,0,255,0.1)">✍ $1</span>');
     
-    // [paste] -> Clipboard
-    newText = newText.replace(/\[paste\]/gi, '<span class="macro-tag tag-clipboard">📋 CLIPBOARD</span>');
-    
-    // [agente] -> Usuário
+    // 3. AGENTE E SISTEMA
     newText = newText.replace(/\[agente\]/gi, '<span class="macro-tag tag-theme">🎧 AGENTE</span>');
+    newText = newText.replace(/\[paste\]/gi, '<span class="macro-tag tag-clipboard">📋 CLIPBOARD</span>');
 
-    // [dom:...] -> Web Scraper (Laranja/Amarelo para devs)
+    // 4. WEB SCRAPER [dom:Seletor] (Laranja)
     newText = newText.replace(/\[dom:([^\]]+)\]/gi, '<span class="macro-tag" style="border-color:#f59e0b; color:#f59e0b; background:rgba(245,158,11,0.1)">🕸️ DOM: $1</span>');
 
-    // --- 3. NAVEGAÇÃO E CURSOR ---
+    // 5. NAVEGAÇÃO E TECLAS
     newText = newText.replace(/\[cursor\]/gi, '<span class="macro-tag tag-cursor">I</span>'); 
     newText = newText.replace(/\[enter\]/gi, '<span class="macro-tag tag-wait">↵ ENTER</span>');
     newText = newText.replace(/\[tab\]/gi, '<span class="macro-tag tag-wait">⇥ TAB</span>');
-    
-    // Setas
-    newText = newText.replace(/\[up\]/gi, '<span class="macro-tag tag-wait">↑ UP</span>');
-    newText = newText.replace(/\[down\]/gi, '<span class="macro-tag tag-wait">↓ DOWN</span>');
-    newText = newText.replace(/\[left\]/gi, '<span class="macro-tag tag-wait">← LEFT</span>');
-    newText = newText.replace(/\[right\]/gi, '<span class="macro-tag tag-wait">→ RIGHT</span>');
-
-    // --- 4. TECLAS ESPECÍFICAS ---
     newText = newText.replace(/\[key:([^\]]+)\]/gi, '<span class="macro-tag tag-wait">⌨️ $1</span>');
 
-    // --- 5. IA (Mantém chaves {}) ---
-    newText = newText.replace(/\{selection\}/gi, '<span class="macro-tag" style="border-color:#a855f7; color:#a855f7">✨ SELECTION</span>');
+    // 6. INTEGRAÇÃO IA (Roxo Neon)
+    // A tag de IA é {selection} (chaves), diferente das outras (colchetes)
+    newText = newText.replace(/\{selection\}/gi, '<span class="macro-tag" style="border-color:#a855f7; color:#a855f7; font-weight:bold; box-shadow:0 0 5px #a855f7">✨ SELECTION (IA)</span>');
 
     return newText;
   };
 
   const formatAsChat = (rawText: string) => {
     if (!rawText) return [];
-    // Quebra visualmente no [enter] para simular mensagens separadas
+    // Quebra visualmente no [enter] para simular chat
     const messages = rawText.split(/\[enter\]/gi);
     return messages.map((msg) => {
       if (!msg.trim()) return null;
@@ -93,13 +85,11 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
   const handleCopy = () => {
     const textToCopy = decodeHtml(snippet.text);
     
-    // DETECÇÃO DE INPUT: Procura por [input:...]
-    // A regex pega o conteúdo dentro dos colchetes, ex: "Nome do Cliente"
+    // DETECÇÃO DE INPUTS para o Modal Web
     const regex = /\[input:([^\]]+)\]/gi;
     const matches = Array.from(textToCopy.matchAll(regex));
 
     if (matches.length > 0) {
-      // Se achou inputs, manda para o Modal processar antes de copiar
       const variables = [...new Set(matches.map(m => m[1]))];
       onProcessVariables(snippet, variables);
       return; 
@@ -141,7 +131,7 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
       content: snippet.text,
       shortcut: snippet.shortcut ? `${snippet.shortcut}_copy` : '',
       app_category: snippet.app || 'TEXT',
-      type: 'text',
+      type: snippet.app === 'AI' ? 'ai' : 'text', // Mantém o tipo correto ao clonar
       is_public: false
     });
 
@@ -195,8 +185,8 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
       </div>
 
       <div style={{ marginBottom: '0.5rem' }}>
-        <span style={{ fontSize: '0.7rem', fontWeight: 'bold', padding: '2px 6px', borderRadius: '4px', background: appType === 'AI' ? 'rgba(255, 0, 255, 0.1)' : 'rgba(0, 243, 255, 0.1)', color: appType === 'AI' ? 'var(--neon-pink)' : 'var(--neon-cyan)', border: `1px solid ${appType === 'AI' ? 'var(--neon-pink)' : 'var(--neon-cyan)'}` }}>
-          {appType} MODE
+        <span style={{ fontSize: '0.7rem', fontWeight: 'bold', padding: '2px 6px', borderRadius: '4px', background: appType === 'AI' ? 'rgba(168, 85, 247, 0.2)' : 'rgba(0, 243, 255, 0.1)', color: appType === 'AI' ? '#a855f7' : 'var(--neon-cyan)', border: `1px solid ${appType === 'AI' ? '#a855f7' : 'var(--neon-cyan)'}` }}>
+          {appType === 'AI' ? '🤖 AI POWERED' : '⚡ MACRO'}
         </span>
       </div>
 
