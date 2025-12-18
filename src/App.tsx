@@ -68,18 +68,25 @@ function App() {
     if (!session) return;
     setLoading(true);
     
+    // 1. Busca Macros
     const { data: macrosData, error: macrosError } = await supabase
       .from('macros')
       .select('*, macro_likes(count), profiles!macros_user_id_fkey(username, email)')
       .order('created_at', { ascending: false });
 
+    // 2. Busca Likes (CORRIGIDO: Busca real)
+    const { data: myLikesData } = await supabase.from('macro_likes').select('macro_id').eq('user_id', session.user.id);
+
+    // 3. Busca Kits
     const { data: kitsData } = await supabase.from('kits').select('*').eq('user_id', session.user.id).order('created_at');
     const { data: itemsData } = await supabase.from('kit_items').select('kit_id, macro_id');
 
     if (macrosError) {
       addToast('FALHA DE CONEXÃO', 'error');
     } else if (macrosData) {
-      const myLikedIds = new Set<string>();
+      
+      // CORRIGIDO: Cria o Set com os IDs que eu curti
+      const myLikedIds = new Set(myLikesData?.map((l: any) => l.macro_id) || []);
 
       const mappedSnippets: Snippet[] = macrosData.map((macro: any) => ({
         id: macro.id,
@@ -91,12 +98,16 @@ function App() {
         sourceFile: 'Geral', 
         folderName: 'Todas as Macros',
         likes_count: macro.macro_likes?.[0]?.count || 0,
-        liked_by_me: false,
+        
+        // CORRIGIDO: Agora usamos a variável myLikedIds aqui!
+        liked_by_me: myLikedIds.has(macro.id),
+        
         author: macro.profiles?.username || macro.profiles?.email?.split('@')[0] || 'Unknown',
         created_at: macro.created_at 
       }));
       
       setAllSnippets(mappedSnippets);
+      
       if (kitsData) setMyKits(kitsData);
       
       const itemsMap: Record<string, Set<string>> = {};
@@ -206,9 +217,7 @@ function App() {
               </div>
 
               <div>
-                {/* AQUI ESTÁ O NOVO TÍTULO COM GLITCH */}
                 <h1 className="title-glitch" data-text="MATRAKA" style={{ margin: 0, lineHeight: 1 }}>MATRAKA</h1>
-                
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '0.5rem' }}>
                     <span className="subtitle" style={{fontFamily:'JetBrains Mono', color: '#fff'}}>
                       USER: <span style={{color: '#9ca3af', fontWeight:'bold'}}>{myUsername}</span>
