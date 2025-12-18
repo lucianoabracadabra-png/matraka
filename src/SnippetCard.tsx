@@ -38,15 +38,29 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, initialLikes, i
     return txt.value;
   };
 
-  const applyDynamicTranslations = (text: string) => {
+const applyDynamicTranslations = (text: string) => {
     if (!text) return '';
     let newText = text;
+    
+    // --- TAGS COMPLEXAS (LEGADO) ---
     newText = newText.replace(/\{site:\s*text;\s*page=[^;]+;\s*selector=\.customer-name\}/gi, '<span class="macro-tag tag-client">[Cliente]</span>');
-    newText = newText.replace(/\{site:\s*text;\s*page=[^;]+;\s*selector=\.drawer :nth-child\(1\) > span\}/gi, '<span class="macro-tag tag-client">[Cliente]</span>');
+    // ... (mantenha as outras regex antigas se quiser) ...
+
+    // --- NOVAS TAGS SIMPLIFICADAS (BARRA DE FERRAMENTAS) ---
+    newText = newText.replace(/\{client\}/gi, '<span class="macro-tag tag-client">[Cliente]</span>');
+    newText = newText.replace(/\{agent\}/gi, '<span class="macro-tag tag-theme">[Agente]</span>');
     newText = newText.replace(/\{cursor\}/gi, '<span class="macro-tag tag-cursor">[Cursor]</span>');
     newText = newText.replace(/\{clipboard\}/gi, '<span class="macro-tag tag-clipboard">[Ctrl+V]</span>');
+    newText = newText.replace(/\{date\}/gi, '<span class="macro-tag tag-wait">[Data Hoje]</span>');
+    newText = newText.replace(/\{key:enter\}/gi, '<span class="macro-tag tag-wait">[Enter]</span>'); // Opcional, se não quebrar linha
+    
+    // Regex melhorada para o Wait (aceita {wait:5s} ou {wait: delay=5})
+    newText = newText.replace(/\{wait:\s*(\w+)\}/gi, '<span class="macro-tag tag-wait">[Aguarde $1]</span>');
+    newText = newText.replace(/\{wait:\s*delay=\+?(\w+)\}/gi, '<span class="macro-tag tag-wait">[Aguarde $1]</span>');
+
     return newText;
   };
+  
 
   const formatAsChat = (rawText: string) => {
     if (!rawText) return [];
