@@ -2,20 +2,19 @@ import { useState, useEffect } from 'react';
 import { supabase } from './supabaseClient';
 import { useToast } from './ToastContext';
 
-// --- ATUALIZAÇÃO DA INTERFACE DE PROPS ---
 interface Props {
   snippet: any;
   userId: string;
   onDelete: () => void;
   onEdit: (snippet: any) => void;
-  // Novas props adicionadas aqui:
   onProcessVariables: (snippet: any, variables: string[]) => void;
   onAddToKit: (id: string) => void;
   initialLikes: number;
   initialLiked: boolean;
+  isInKit?: boolean; // <--- NOVA PROP
 }
 
-export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariables, onAddToKit, initialLikes, initialLiked }: Props) {
+export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariables, onAddToKit, initialLikes, initialLiked, isInKit }: Props) {
   const { addToast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isCloning, setIsCloning] = useState(false);
@@ -31,7 +30,6 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
     }
   }, [deleteConfirm]);
 
-  // --- UTILS ---
   const decodeHtml = (html: string | undefined) => {
     if (!html) return '';
     const txt = document.createElement('textarea');
@@ -42,8 +40,6 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
   const applyDynamicTranslations = (text: string) => {
     if (!text) return '';
     let newText = text;
-    
-    // Formatação visual das tags
     newText = newText.replace(/\{client\}/gi, '<span class="macro-tag tag-client">[Cliente]</span>');
     newText = newText.replace(/\{agent\}/gi, '<span class="macro-tag tag-theme">[Agente]</span>');
     newText = newText.replace(/\{cursor\}/gi, '<span class="macro-tag tag-cursor">[Cursor]</span>');
@@ -51,10 +47,7 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
     newText = newText.replace(/\{date\}/gi, '<span class="macro-tag tag-wait">[Data]</span>');
     newText = newText.replace(/\{key:enter\}/gi, '<span class="macro-tag tag-wait">[Enter]</span>');
     newText = newText.replace(/\{wait:\s*(\w+)\}/gi, '<span class="macro-tag tag-wait">[Wait $1]</span>');
-    
-    // NOVA TAG VISUAL: {input:nome} vira [Input: NOME] em rosa
     newText = newText.replace(/\{input:([a-zA-Z0-9_\s]+)\}/gi, '<span class="macro-tag" style="border-color:var(--neon-pink); color:var(--neon-pink)">[Input: $1]</span>');
-
     return newText;
   };
 
@@ -69,23 +62,17 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
     }).filter(Boolean);
   };
 
-  // --- ACTIONS ---
-  
   const handleCopy = () => {
     const textToCopy = decodeHtml(snippet.text);
-
-    // 1. DETECÇÃO DE VARIÁVEIS
     const regex = /\{input:([a-zA-Z0-9_\s]+)\}/gi;
     const matches = Array.from(textToCopy.matchAll(regex));
 
     if (matches.length > 0) {
-      // Se achou variáveis, chama o Modal no App.tsx
       const variables = [...new Set(matches.map(m => m[1]))];
       onProcessVariables(snippet, variables);
-      return; // Para por aqui
+      return; 
     }
 
-    // 2. Se não tem variáveis, copia direto
     navigator.clipboard.writeText(textToCopy)
       .then(() => addToast('COPIADO PARA O CLIPBOARD!', 'success'))
       .catch(() => addToast('ERRO AO COPIAR', 'error'));
@@ -151,7 +138,6 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
     }
   };
 
-  // --- RENDER ---
   let formattedDate = '...'; 
   if (snippet.created_at) {
     try {
@@ -207,22 +193,26 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
         
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           
-          {/* BOTÃO ADD TO KIT (NOVO) */}
+          {/* BOTÃO KIT DINÂMICO */}
           <button 
             onClick={() => onAddToKit(snippet.id)}
             style={{ 
-              background: 'rgba(255, 255, 255, 0.05)', border: '1px solid #666', 
-              color: '#fff', cursor: 'pointer', padding: '4px 8px', borderRadius: '4px', 
-              fontSize: '0.75rem', fontFamily: 'JetBrains Mono' 
+              // Se estiver no kit: Fundo verde suave + borda verde neon
+              background: isInKit ? 'rgba(0, 255, 0, 0.1)' : 'rgba(255, 255, 255, 0.05)', 
+              border: isInKit ? '1px solid #00ff00' : '1px solid #666', 
+              color: isInKit ? '#00ff00' : '#fff', 
+              cursor: 'pointer', padding: '4px 8px', borderRadius: '4px', 
+              fontSize: '0.75rem', fontFamily: 'JetBrains Mono',
+              display: 'flex', alignItems: 'center', gap: '4px'
             }} 
-            title="Adicionar a um Kit"
+            title={isInKit ? "Gerenciar Kits (Adicionado)" : "Adicionar a um Kit"}
           >
-            +KIT
+            {isInKit ? '✓ KIT' : '+ KIT'}
           </button>
 
           {!isOwner && (
             <button onClick={handleClone} disabled={isCloning} style={{ background: 'rgba(0, 243, 255, 0.1)', border: '1px solid var(--neon-cyan)', color: 'var(--neon-cyan)', cursor: 'pointer', padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem', fontFamily: 'JetBrains Mono', display: 'flex', alignItems: 'center', gap: '4px' }} title="FORK">
-              {isCloning ? '...' : <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2-2v1"></path></svg></>}
+              {isCloning ? '...' : <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></>}
             </button>
           )}
 

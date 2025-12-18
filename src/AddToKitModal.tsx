@@ -7,17 +7,22 @@ interface Props {
   onClose: () => void;
   userId: string;
   macroId: string | null;
+  macroKits?: string[]; // IDs dos kits onde a macro já está
 }
 
-export function AddToKitModal({ isOpen, onClose, userId, macroId }: Props) {
+export function AddToKitModal({ isOpen, onClose, userId, macroId, macroKits = [] }: Props) {
   const { addToast } = useToast();
   const [kits, setKits] = useState<any[]>([]);
   const [newKitName, setNewKitName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [localMacroKits, setLocalMacroKits] = useState<string[]>([]);
 
   useEffect(() => {
-    if (isOpen) fetchKits();
-  }, [isOpen]);
+    if (isOpen) {
+      fetchKits();
+      setLocalMacroKits(macroKits); // Sincroniza estado local
+    }
+  }, [isOpen, macroKits]);
 
   const fetchKits = async () => {
     const { data } = await supabase.from('kits').select('*').eq('user_id', userId).order('created_at');
@@ -37,19 +42,32 @@ export function AddToKitModal({ isOpen, onClose, userId, macroId }: Props) {
     setLoading(false);
   };
 
-  const handleAddToKit = async (kitId: string) => {
+  const handleToggleKit = async (kitId: string) => {
     if (!macroId) return;
     setLoading(true);
-    const { error } = await supabase.from('kit_items').insert({ kit_id: kitId, macro_id: macroId });
-    
-    setLoading(false);
-    if (error) {
-      if (error.code === '23505') addToast('JÁ ESTÁ NESTE KIT!', 'info');
-      else addToast('ERRO AO ADICIONAR', 'error');
+
+    const isAdded = localMacroKits.includes(kitId);
+
+    if (isAdded) {
+      // REMOVER
+      const { error } = await supabase.from('kit_items').delete().eq('kit_id', kitId).eq('macro_id', macroId);
+      if (error) {
+        addToast('ERRO AO REMOVER', 'error');
+      } else {
+        setLocalMacroKits(prev => prev.filter(id => id !== kitId));
+        addToast('REMOVIDO DO KIT', 'info');
+      }
     } else {
-      addToast('ADICIONADO AO KIT COM SUCESSO!', 'success');
-      onClose();
+      // ADICIONAR
+      const { error } = await supabase.from('kit_items').insert({ kit_id: kitId, macro_id: macroId });
+      if (error) {
+        addToast('ERRO AO ADICIONAR', 'error');
+      } else {
+        setLocalMacroKits(prev => [...prev, kitId]);
+        addToast('ADICIONADO AO KIT', 'success');
+      }
     }
+    setLoading(false);
   };
 
   if (!isOpen) return null;
@@ -60,59 +78,80 @@ export function AddToKitModal({ isOpen, onClose, userId, macroId }: Props) {
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       backdropFilter: 'blur(5px)', backgroundColor: 'rgba(0, 0, 0, 0.8)'
     }}>
-      <div className="cyber-modal" style={{ width: '90%', maxWidth: '400px', padding: '1.5rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-          <h3 style={{ margin: 0, color: '#fff' }}>ADD_TO_KIT</h3>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer' }}>✕</button>
+      <div className="cyber-modal" style={{ width: '90%', maxWidth: '450px', padding: '2rem' }}>
+        
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+          <div>
+            <span style={{ fontSize: '0.7rem', color: 'var(--neon-purple)', fontFamily: 'JetBrains Mono' }}>SYSTEM: ORGANIZE</span>
+            <h2 className="title" style={{ fontSize: '1.5rem', margin: 0, color: '#fff' }}>MANAGE_KITS</h2>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--neon-pink)', cursor: 'pointer', fontSize: '1.2rem' }}>✕</button>
         </div>
 
-        {/* LISTA DE KITS EXISTENTES */}
-        <div style={{ maxHeight: '200px', overflowY: 'auto', marginBottom: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          {kits.length === 0 && <p style={{ color: '#666', fontSize: '0.8rem', textAlign: 'center' }}>Nenhum kit encontrado.</p>}
+        {/* LISTA DE KITS */}
+        <div style={{ maxHeight: '250px', overflowY: 'auto', marginBottom: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', paddingRight: '5px' }}>
+          {kits.length === 0 && <p style={{ color: '#666', fontSize: '0.8rem', textAlign: 'center', padding: '1rem' }}>NENHUMA PASTA ENCONTRADA</p>}
           
-          {kits.map(kit => (
-            <button
-              key={kit.id}
-              onClick={() => handleAddToKit(kit.id)}
-              disabled={loading}
-              style={{
-                background: 'rgba(255,255,255,0.05)', border: '1px solid #333',
-                color: 'var(--neon-cyan)', padding: '10px', borderRadius: '4px',
-                textAlign: 'left', cursor: 'pointer', fontFamily: 'JetBrains Mono',
-                transition: 'all 0.2s', display: 'flex', justifyContent: 'space-between'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--neon-cyan)'}
-              onMouseLeave={(e) => e.currentTarget.style.borderColor = '#333'}
-            >
-              <span>📁 {kit.name}</span>
-              <span style={{ fontSize: '0.8rem', opacity: 0.5 }}>ADD +</span>
-            </button>
-          ))}
+          {kits.map(kit => {
+            const isAdded = localMacroKits.includes(kit.id);
+            return (
+              <button
+                key={kit.id}
+                onClick={() => handleToggleKit(kit.id)}
+                disabled={loading}
+                style={{
+                  background: isAdded ? 'rgba(0, 255, 0, 0.1)' : 'rgba(255, 255, 255, 0.03)',
+                  border: isAdded ? '1px solid #00ff00' : '1px solid #333',
+                  color: isAdded ? '#00ff00' : '#888',
+                  padding: '12px', borderRadius: '4px',
+                  textAlign: 'left', cursor: 'pointer', fontFamily: 'JetBrains Mono',
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                   if(!isAdded) {
+                     e.currentTarget.style.borderColor = 'var(--neon-cyan)';
+                     e.currentTarget.style.color = '#fff';
+                   }
+                }}
+                onMouseLeave={(e) => {
+                   if(!isAdded) {
+                     e.currentTarget.style.borderColor = '#333';
+                     e.currentTarget.style.color = '#888';
+                   }
+                }}
+              >
+                <span style={{ fontWeight: 'bold' }}>📁 {kit.name}</span>
+                <span style={{ fontSize: '0.7rem', fontWeight: 'bold' }}>
+                  {isAdded ? 'REMOVER [-]' : 'ADICIONAR [+]'}
+                </span>
+              </button>
+            )
+          })}
         </div>
 
         {/* CRIAR NOVO KIT */}
-        <div style={{ borderTop: '1px solid #333', paddingTop: '1rem' }}>
-          <label className="cyber-label">NEW_KIT_NAME</label>
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1.5rem' }}>
+          <label className="cyber-label">CREATE_NEW_FOLDER</label>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <input 
               className="cyber-input" 
               value={newKitName} 
               onChange={e => setNewKitName(e.target.value)} 
-              placeholder="Ex: Vendas"
-              style={{ padding: '8px' }}
+              placeholder="Nome do Kit..."
+              style={{ padding: '10px' }}
             />
             <button 
               onClick={handleCreateKit}
               disabled={loading || !newKitName}
-              style={{
-                background: 'var(--neon-cyan)', color: '#000', border: 'none',
-                fontWeight: 'bold', cursor: 'pointer', padding: '0 15px', borderRadius: '2px'
-              }}
+              className="cyber-btn-main"
+              style={{ padding: '0 20px', fontSize: '0.8rem', minWidth: 'auto' }}
             >
               CRIAR
             </button>
           </div>
         </div>
+
       </div>
     </div>
   );

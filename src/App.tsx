@@ -5,7 +5,7 @@ import { CreateMacroModal } from './CreateMacroModal';
 import { SnippetCard } from './SnippetCard';
 import { ProfileModal } from './ProfileModal';
 import { InputVariableModal } from './InputVariableModal';
-import { AddToKitModal } from './AddToKitModal'; // <--- IMPORT NOVO
+import { AddToKitModal } from './AddToKitModal';
 import { useToast } from './ToastContext';
 import type { Session } from '@supabase/supabase-js';
 import './index.css';
@@ -34,8 +34,8 @@ function App() {
   const { addToast } = useToast();
   
   // NAVEGAÇÃO
-  const [activeTab, setActiveTab] = useState('ALL'); // ALL, MINE, FAVS, KITS
-  const [selectedKitId, setSelectedKitId] = useState<string | null>(null); // Qual kit está aberto
+  const [activeTab, setActiveTab] = useState('ALL'); 
+  const [selectedKitId, setSelectedKitId] = useState<string | null>(null);
   
   // TOGGLES
   const [showAI, setShowAI] = useState(true);
@@ -45,8 +45,8 @@ function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [allSnippets, setAllSnippets] = useState<Snippet[]>([]);
   const [filteredSnippets, setFilteredSnippets] = useState<Snippet[]>([]);
-  const [myKits, setMyKits] = useState<Kit[]>([]); // Lista de kits do usuário
-  const [kitItems, setKitItems] = useState<Record<string, Set<string>>>({}); // Mapa: kit_id -> Set(macro_ids)
+  const [myKits, setMyKits] = useState<Kit[]>([]); 
+  const [kitItems, setKitItems] = useState<Record<string, Set<string>>>({}); 
 
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
@@ -56,13 +56,9 @@ function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [macroToEdit, setMacroToEdit] = useState<Snippet | null>(null);
-  
-  // Modal Input Variables
   const [isInputModalOpen, setIsInputModalOpen] = useState(false);
   const [varsToProcess, setVarsToProcess] = useState<string[]>([]);
   const [macroToProcess, setMacroToProcess] = useState<Snippet | null>(null);
-
-  // Modal Add To Kit
   const [isAddToKitOpen, setIsAddToKitOpen] = useState(false);
   const [macroIdToAdd, setMacroIdToAdd] = useState<string | null>(null);
 
@@ -96,16 +92,12 @@ function App() {
     if (!session) return;
     setLoading(true);
     
-    // Busca Macros
     const { data: macrosData, error: macrosError } = await supabase
       .from('macros')
       .select('*, macro_likes(count), profiles!macros_user_id_fkey(username, email)')
       .order('created_at', { ascending: false });
 
-    // Busca Likes
     const { data: myLikesData } = await supabase.from('macro_likes').select('macro_id').eq('user_id', session.user.id);
-
-    // Busca Kits e Itens
     const { data: kitsData } = await supabase.from('kits').select('*').eq('user_id', session.user.id).order('created_at');
     const { data: itemsData } = await supabase.from('kit_items').select('kit_id, macro_id');
 
@@ -131,19 +123,13 @@ function App() {
       
       setAllSnippets(mappedSnippets);
       
-      // Processa Kits
       if (kitsData) setMyKits(kitsData);
       
-      // Processa Itens dos Kits (Map para acesso rápido)
       const itemsMap: Record<string, Set<string>> = {};
-      if (kitsData) {
-          kitsData.forEach((k: Kit) => itemsMap[k.id] = new Set());
-      }
-      if (itemsData) {
-          itemsData.forEach((item: any) => {
-              if (itemsMap[item.kit_id]) itemsMap[item.kit_id].add(item.macro_id);
-          });
-      }
+      if (kitsData) kitsData.forEach((k: Kit) => itemsMap[k.id] = new Set());
+      if (itemsData) itemsData.forEach((item: any) => {
+          if (itemsMap[item.kit_id]) itemsMap[item.kit_id].add(item.macro_id);
+      });
       setKitItems(itemsMap);
     }
     setLoading(false);
@@ -169,7 +155,7 @@ function App() {
   };
 
   const handleDeleteKit = async (kitId: string, kitName: string) => {
-    if (!confirm(`Deletar o kit "${kitName}"? As macros não serão apagadas, apenas a pasta.`)) return;
+    if (!confirm(`Deletar o kit "${kitName}"?`)) return;
     const { error } = await supabase.from('kits').delete().eq('id', kitId);
     if (error) addToast('ERRO AO DELETAR KIT', 'error');
     else {
@@ -179,11 +165,21 @@ function App() {
     }
   };
 
-  // --- 4. FILTRO INTELIGENTE ---
+  // Helper para saber se a macro está em ALGUM kit (para pintar o botão de verde)
+  const isMacroInAnyKit = (macroId: string) => {
+    return Object.values(kitItems).some(set => set.has(macroId));
+  };
+
+  // Helper para passar pro modal saber em quais kits a macro JÁ está
+  const getMacroKits = (macroId: string | null) => {
+    if (!macroId) return [];
+    return Object.keys(kitItems).filter(kitId => kitItems[kitId].has(macroId));
+  };
+
+  // --- 4. FILTRO ---
   useEffect(() => {
     const term = searchTerm.toLowerCase();
     
-    // A. Filtro de Texto Global
     let filtered = allSnippets.filter(snippet => 
       (snippet.name && snippet.name.toLowerCase().includes(term)) ||
       (snippet.shortcut && snippet.shortcut.toLowerCase().includes(term)) ||
@@ -191,26 +187,13 @@ function App() {
       (snippet.author && snippet.author.toLowerCase().includes(term))
     );
 
-    // B. Filtro de Aba (Escopo)
-    if (activeTab === 'MINE') {
-      filtered = filtered.filter(s => s.user_id === session?.user.id);
-    } else if (activeTab === 'FAVS') {
-      filtered = filtered.filter(s => s.liked_by_me);
-    } else if (activeTab === 'KITS') {
-      // Lógica de Kits: Se tem um kit selecionado, mostra só o que tá nele
-      if (selectedKitId && kitItems[selectedKitId]) {
-          filtered = filtered.filter(s => kitItems[selectedKitId].has(s.id));
-      } else {
-          // Se não tem kit selecionado, mostra TUDO (ou poderia mostrar vazio, decisão de UX)
-          // Vamos mostrar vazio para forçar a seleção de um kit e limpar a tela
-          // Mas vamos deixar mostrando 'MINE' por padrão quando entra na aba Kits sem selecionar nada?
-          // Não, melhor deixar limpo ou mostrar instrução.
-          // Vou optar por mostrar as do usuário para não ficar tela branca feia.
-          filtered = filtered.filter(s => s.user_id === session?.user.id);
-      }
+    if (activeTab === 'MINE') filtered = filtered.filter(s => s.user_id === session?.user.id);
+    else if (activeTab === 'FAVS') filtered = filtered.filter(s => s.liked_by_me);
+    else if (activeTab === 'KITS') {
+      if (selectedKitId && kitItems[selectedKitId]) filtered = filtered.filter(s => kitItems[selectedKitId].has(s.id));
+      else filtered = filtered.filter(s => s.user_id === session?.user.id);
     }
 
-    // C. Filtro de Tipo (Toggles)
     filtered = filtered.filter(s => {
       const isAI = s.app === 'AI';
       const isText = s.app === 'TEXT' || !s.app; 
@@ -261,66 +244,34 @@ function App() {
              <input type="text" className="search-input" placeholder="SEARCH_DATABASE..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
           </div>
 
-          {/* BARRA DE NAVEGAÇÃO PRINCIPAL */}
-          <div style={{ 
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem',
-            marginTop: '1.5rem', borderBottom: '1px solid rgba(0, 243, 255, 0.2)', paddingBottom: '0.5rem'
-          }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginTop: '1.5rem', borderBottom: '1px solid rgba(0, 243, 255, 0.2)', paddingBottom: '0.5rem' }}>
             <div style={{ display: 'flex', gap: '1rem', overflowX: 'auto' }}>
               {['ALL', 'MINE', 'FAVS', 'KITS'].map((tab) => {
                 const isActive = activeTab === tab;
                 return (
                   <button key={tab} onClick={() => { setActiveTab(tab); if(tab !== 'KITS') setSelectedKitId(null); }} 
-                    style={{ 
-                        background: isActive ? 'var(--neon-cyan)' : 'transparent', 
-                        color: isActive ? '#000' : 'var(--neon-cyan)', 
-                        border: 'none', padding: '0.5rem 1rem', cursor: 'pointer', fontWeight: 'bold', 
-                        fontFamily: 'JetBrains Mono', clipPath: 'polygon(10% 0, 100% 0, 90% 100%, 0% 100%)' 
-                    }}>
+                    style={{ background: isActive ? 'var(--neon-cyan)' : 'transparent', color: isActive ? '#000' : 'var(--neon-cyan)', border: 'none', padding: '0.5rem 1rem', cursor: 'pointer', fontWeight: 'bold', fontFamily: 'JetBrains Mono', clipPath: 'polygon(10% 0, 100% 0, 90% 100%, 0% 100%)' }}>
                     {tab}
                   </button>
                 )
               })}
             </div>
-
             <div style={{ display: 'flex', gap: '0.5rem' }}>
               <button onClick={() => setShowAI(!showAI)} style={{ border: `1px solid ${showAI ? 'var(--neon-pink)' : '#444'}`, color: showAI ? 'var(--neon-pink)' : '#666', background:'transparent', padding: '0.3rem 0.8rem', cursor: 'pointer', fontFamily: 'JetBrains Mono', fontSize: '0.8rem' }}>AI</button>
               <button onClick={() => setShowText(!showText)} style={{ border: `1px solid ${showText ? 'var(--neon-cyan)' : '#444'}`, color: showText ? 'var(--neon-cyan)' : '#666', background:'transparent', padding: '0.3rem 0.8rem', cursor: 'pointer', fontFamily: 'JetBrains Mono', fontSize: '0.8rem' }}>TXT</button>
             </div>
           </div>
 
-          {/* SUB-BARRA DE KITS (SÓ APARECE SE ABA FOR KITS) */}
           {activeTab === 'KITS' && (
-              <div style={{ 
-                  display: 'flex', gap: '0.8rem', padding: '1rem 0', overflowX: 'auto', 
-                  borderBottom: '1px solid rgba(255,255,255,0.1)', animation: 'fadeIn 0.3s'
-              }}>
-                  <button 
-                    onClick={() => setIsAddToKitOpen(true)} // Atalho para criar kit rápido
-                    style={{ background: 'var(--neon-pink)', color: '#000', border: 'none', borderRadius: '4px', padding: '6px 12px', cursor: 'pointer', fontWeight:'bold', fontSize:'0.8rem' }}
-                  >
-                      + NOVO KIT
-                  </button>
-                  
+              <div style={{ display: 'flex', gap: '0.8rem', padding: '1rem 0', overflowX: 'auto', borderBottom: '1px solid rgba(255,255,255,0.1)', animation: 'fadeIn 0.3s' }}>
+                  <button onClick={() => setIsAddToKitOpen(true)} style={{ background: 'var(--neon-pink)', color: '#000', border: 'none', borderRadius: '4px', padding: '6px 12px', cursor: 'pointer', fontWeight:'bold', fontSize:'0.8rem' }}>+ NOVO KIT</button>
                   {myKits.length === 0 && <span style={{color:'#666', fontSize:'0.8rem', alignSelf:'center'}}>Crie seu primeiro kit!</span>}
-
                   {myKits.map(kit => (
                       <div key={kit.id} style={{display:'flex', alignItems:'center', background: selectedKitId === kit.id ? 'rgba(0, 243, 255, 0.2)' : 'rgba(255,255,255,0.05)', borderRadius:'4px', border: selectedKitId === kit.id ? '1px solid var(--neon-cyan)' : '1px solid #444'}}>
-                          <button
-                            onClick={() => setSelectedKitId(kit.id)}
-                            style={{ 
-                                background: 'transparent', border: 'none', color: '#fff', 
-                                padding: '6px 12px', cursor: 'pointer', fontFamily: 'JetBrains Mono', fontSize: '0.8rem'
-                            }}
-                          >
+                          <button onClick={() => setSelectedKitId(kit.id)} style={{ background: 'transparent', border: 'none', color: '#fff', padding: '6px 12px', cursor: 'pointer', fontFamily: 'JetBrains Mono', fontSize: '0.8rem' }}>
                               📁 {kit.name} <span style={{opacity:0.5}}>({kitItems[kit.id]?.size || 0})</span>
                           </button>
-                          {/* Botão Deletar Kit Pequeno */}
-                          <button 
-                            onClick={() => handleDeleteKit(kit.id, kit.name)}
-                            style={{ background:'transparent', border:'none', color:'#666', cursor:'pointer', padding:'0 8px', fontSize:'10px' }}
-                            title="Deletar Kit"
-                          >✕</button>
+                          <button onClick={() => handleDeleteKit(kit.id, kit.name)} style={{ background:'transparent', border:'none', color:'#666', cursor:'pointer', padding:'0 8px', fontSize:'10px' }} title="Deletar Kit">✕</button>
                       </div>
                   ))}
               </div>
@@ -340,26 +291,27 @@ function App() {
                   onDelete={() => fetchMacros()}
                   onEdit={handleEdit}
                   onProcessVariables={handleProcessVariables}
-                  onAddToKit={handleAddToKit} // <--- Passando função nova
+                  onAddToKit={handleAddToKit}
                   initialLikes={snippet.likes_count}
                   initialLiked={snippet.liked_by_me}
+                  isInKit={isMacroInAnyKit(snippet.id)} // <--- NOVA PROP: Botão verde
                 />
               ))}
             </div>
           </div>
         ))}
 
-        {/* MODAIS */}
         <CreateMacroModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={() => fetchMacros()} userId={session.user.id} macroToEdit={macroToEdit} />
         <ProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} userId={session.user.id} onUpdate={() => { fetchUserProfile(session.user.id); fetchMacros(); }} />
         <InputVariableModal isOpen={isInputModalOpen} onClose={() => setIsInputModalOpen(false)} variables={varsToProcess} originalText={macroToProcess?.text || ''} />
         
-        {/* MODAL ADICIONAR AO KIT */}
+        {/* Passamos as funções para atualizar corretamente */}
         <AddToKitModal 
             isOpen={isAddToKitOpen} 
-            onClose={() => { setIsAddToKitOpen(false); fetchMacros(); }} // Refresh para atualizar contagem
+            onClose={() => { setIsAddToKitOpen(false); fetchMacros(); }} 
             userId={session.user.id}
             macroId={macroIdToAdd}
+            macroKits={getMacroKits(macroIdToAdd)} // <--- NOVA PROP: Quais kits ela já tem
         />
 
       </div>
