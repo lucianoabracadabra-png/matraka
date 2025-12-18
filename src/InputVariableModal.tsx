@@ -29,11 +29,13 @@ export function InputVariableModal({ isOpen, onClose, variables, originalText }:
 
     variables.forEach(variable => {
       const valueToInsert = values[variable] || ''; 
-      const regex = new RegExp(`\\{input:${variable}\\}`, 'gi');
+      // SINTAXE NOVA: [input:VARIAVEL]
+      // Precisamos escapar os colchetes na regex, pois são especiais
+      const regex = new RegExp(`\\[input:${variable}\\]`, 'gi');
       finalText = finalText.replace(regex, valueToInsert);
     });
     
-    // Pequeno hack para decodificar HTML entities
+    // Tratamento básico para HTML entities se necessário
     const txt = document.createElement('textarea');
     txt.innerHTML = finalText;
     finalText = txt.value;

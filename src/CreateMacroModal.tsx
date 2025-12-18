@@ -143,32 +143,48 @@ export function CreateMacroModal({ isOpen, onClose, onSuccess, userId, macroToEd
           <div>
             <label className="cyber-label">DATA_CONTENT</label>
             
-            {/* --- BARRA DE FERRAMENTAS PADRONIZADA --- */}
             <div style={{ 
               display: 'flex', gap: '0.5rem', marginBottom: '0.5rem', flexWrap: 'wrap',
               background: 'rgba(0, 0, 0, 0.3)', padding: '0.5rem', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.1)'
             }}>
               
-              {/* GRUPO 1: Ferramentas de Sistema (CYAN) */}
-              <ToolButton label="CURSOR" icon="⌶" onClick={() => insertTag('{cursor}')} color="var(--neon-cyan)" />
-              <ToolButton label="CLIPBOARD" icon="📋" onClick={() => insertTag('{clipboard}')} color="var(--neon-cyan)" />
+              <ToolButton label="CURSOR" icon="⌶" onClick={() => insertTag('[cursor]')} color="var(--neon-cyan)" />
+              <ToolButton label="CLIPBOARD" icon="📋" onClick={() => insertTag('[paste]')} color="var(--neon-cyan)" />
               
               <div style={{ width: '1px', background: 'rgba(255,255,255,0.2)', margin: '0 0.2rem' }}></div>
               
-              {/* GRUPO 2: Entidades (ROXO) */}
-              <ToolButton label="CLIENTE" icon="👤" onClick={() => insertTag('{client}')} color="var(--neon-purple)" />
-              <ToolButton label="AGENTE" icon="🎧" onClick={() => insertTag('{agent}')} color="var(--neon-purple)" />
+              <ToolButton label="AGENTE" icon="🎧" onClick={() => insertTag('[agente]')} color="var(--neon-purple)" />
+              {/* Botão Input: Insere e seleciona 'Título' para facilitar edição */}
+              <ToolButton 
+                label="INPUT" 
+                icon="✍" 
+                onClick={() => {
+                  const tag = '[input:Título]';
+                  if (textareaRef.current) {
+                    const start = textareaRef.current.selectionStart;
+                    const text = content;
+                    const newText = text.substring(0, start) + tag + text.substring(textareaRef.current.selectionEnd);
+                    setContent(newText);
+                    setTimeout(() => {
+                      if (textareaRef.current) {
+                        textareaRef.current.focus();
+                        textareaRef.current.setSelectionRange(start + 7, start + 7 + 6); // Seleciona "Título"
+                      }
+                    }, 0);
+                  }
+                }} 
+                color="var(--neon-pink)" 
+              />
               
               <div style={{ width: '1px', background: 'rgba(255,255,255,0.2)', margin: '0 0.2rem' }}></div>
 
-              {/* GRUPO 3: Dados e Controle (CYAN e ROSA) */}
-              <ToolButton label="DATA" icon="📅" onClick={() => insertTag('{date}')} color="var(--neon-cyan)" />
-              <ToolButton label="ENTER" icon="↵" onClick={() => insertTag('{key:enter}')} color="var(--neon-cyan)" />
+              <ToolButton label="DOM" icon="🕸️" onClick={() => insertTag('[dom:.classe]')} color="#f59e0b" />
+              <ToolButton label="ENTER" icon="↵" onClick={() => insertTag('[enter]')} color="var(--neon-cyan)" />
+              <ToolButton label="TAB" icon="⇥" onClick={() => insertTag('[tab]')} color="var(--neon-cyan)" />
               
-              {/* Botão Wait (ROSA) */}
               <div style={{ position: 'relative' }}>
                 <ToolButton 
-                  label="AGUARDE..." 
+                  label="WAIT..." 
                   icon="⏳" 
                   onClick={() => setShowWaitMenu(!showWaitMenu)} 
                   color="var(--neon-pink)"
@@ -182,10 +198,10 @@ export function CreateMacroModal({ isOpen, onClose, onSuccess, userId, macroToEd
                     zIndex: 10, boxShadow: '0 0 15px rgba(255,0,85,0.3)',
                     minWidth: '100px'
                   }}>
-                    {[1, 2, 3, 5, 10].map(sec => (
+                    {[1, 2, 3, 5].map(sec => (
                       <button
                         key={sec}
-                        onClick={() => { insertTag(`{wait:${sec}s}`); setShowWaitMenu(false); }}
+                        onClick={() => { insertTag(`[wait:${sec}]`); setShowWaitMenu(false); }}
                         style={{
                           background: 'rgba(255, 0, 85, 0.1)', border: 'none', color: '#fff',
                           padding: '6px', cursor: 'pointer', fontFamily: 'JetBrains Mono',
@@ -193,7 +209,7 @@ export function CreateMacroModal({ isOpen, onClose, onSuccess, userId, macroToEd
                         }}
                         className="hover-pink"
                       >
-                        +{sec}s
+                        {sec}s
                       </button>
                     ))}
                   </div>
@@ -205,7 +221,7 @@ export function CreateMacroModal({ isOpen, onClose, onSuccess, userId, macroToEd
             <textarea 
               ref={textareaRef}
               className="cyber-input cyber-textarea" 
-              placeholder="Digite o texto da macro..." 
+              placeholder="Digite o texto da macro... Use [input:Nome] para variáveis." 
               value={content} onChange={e => setContent(e.target.value)}
               style={{ minHeight: '180px', fontFamily: 'monospace', fontSize: '0.9rem', lineHeight: '1.5' }}
             />
@@ -228,7 +244,7 @@ export function CreateMacroModal({ isOpen, onClose, onSuccess, userId, macroToEd
 }
 
 function ToolButton({ label, icon, onClick, color }: any) {
-  const finalColor = color || '#e0e0e0';
+  const finalColor = color || 'var(--neon-cyan)';
   
   return (
     <button 
@@ -248,13 +264,13 @@ function ToolButton({ label, icon, onClick, color }: any) {
         transition: 'all 0.2s',
         boxShadow: `0 0 5px ${finalColor}20` 
       }}
-      onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => {
+      onMouseEnter={(e) => {
         const target = e.currentTarget as HTMLButtonElement;
         target.style.background = finalColor;
         target.style.color = '#000'; 
         target.style.boxShadow = `0 0 15px ${finalColor}`;
       }}
-      onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => {
+      onMouseLeave={(e) => {
         const target = e.currentTarget as HTMLButtonElement;
         target.style.background = 'rgba(0,0,0,0.3)';
         target.style.color = finalColor;

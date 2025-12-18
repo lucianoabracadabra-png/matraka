@@ -40,20 +40,48 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
   const applyDynamicTranslations = (text: string) => {
     if (!text) return '';
     let newText = text;
-    newText = newText.replace(/\{client\}/gi, '<span class="macro-tag tag-client">[Cliente]</span>');
-    newText = newText.replace(/\{agent\}/gi, '<span class="macro-tag tag-theme">[Agente]</span>');
-    newText = newText.replace(/\{cursor\}/gi, '<span class="macro-tag tag-cursor">[Cursor]</span>');
-    newText = newText.replace(/\{clipboard\}/gi, '<span class="macro-tag tag-clipboard">[Ctrl+V]</span>');
-    newText = newText.replace(/\{date\}/gi, '<span class="macro-tag tag-wait">[Data]</span>');
-    newText = newText.replace(/\{key:enter\}/gi, '<span class="macro-tag tag-wait">[Enter]</span>');
-    newText = newText.replace(/\{wait:\s*(\w+)\}/gi, '<span class="macro-tag tag-wait">[Wait $1]</span>');
-    newText = newText.replace(/\{input:([a-zA-Z0-9_\s]+)\}/gi, '<span class="macro-tag" style="border-color:var(--neon-pink); color:var(--neon-pink)">[Input: $1]</span>');
+
+    // --- 1. CONTROLE DE TEMPO ([wait:X] ou [wait+Xs]) ---
+    newText = newText.replace(/\[wait:([\d\.]+)\]/gi, '<span class="macro-tag tag-wait">⏳ $1s</span>');
+    newText = newText.replace(/\[wait\+([\d\.]+)s\]/gi, '<span class="macro-tag tag-wait">⏳ +$1s</span>');
+
+    // --- 2. INTERAÇÃO E DADOS ---
+    // [input:...] -> Rosa Neon (Destaque visual)
+    newText = newText.replace(/\[input:([^\]]+)\]/gi, '<span class="macro-tag" style="border-color:var(--neon-pink); color:var(--neon-pink); background:rgba(255,0,255,0.1)">✍ $1</span>');
+    
+    // [paste] -> Clipboard
+    newText = newText.replace(/\[paste\]/gi, '<span class="macro-tag tag-clipboard">📋 CLIPBOARD</span>');
+    
+    // [agente] -> Usuário
+    newText = newText.replace(/\[agente\]/gi, '<span class="macro-tag tag-theme">🎧 AGENTE</span>');
+
+    // [dom:...] -> Web Scraper (Laranja/Amarelo para devs)
+    newText = newText.replace(/\[dom:([^\]]+)\]/gi, '<span class="macro-tag" style="border-color:#f59e0b; color:#f59e0b; background:rgba(245,158,11,0.1)">🕸️ DOM: $1</span>');
+
+    // --- 3. NAVEGAÇÃO E CURSOR ---
+    newText = newText.replace(/\[cursor\]/gi, '<span class="macro-tag tag-cursor">I</span>'); 
+    newText = newText.replace(/\[enter\]/gi, '<span class="macro-tag tag-wait">↵ ENTER</span>');
+    newText = newText.replace(/\[tab\]/gi, '<span class="macro-tag tag-wait">⇥ TAB</span>');
+    
+    // Setas
+    newText = newText.replace(/\[up\]/gi, '<span class="macro-tag tag-wait">↑ UP</span>');
+    newText = newText.replace(/\[down\]/gi, '<span class="macro-tag tag-wait">↓ DOWN</span>');
+    newText = newText.replace(/\[left\]/gi, '<span class="macro-tag tag-wait">← LEFT</span>');
+    newText = newText.replace(/\[right\]/gi, '<span class="macro-tag tag-wait">→ RIGHT</span>');
+
+    // --- 4. TECLAS ESPECÍFICAS ---
+    newText = newText.replace(/\[key:([^\]]+)\]/gi, '<span class="macro-tag tag-wait">⌨️ $1</span>');
+
+    // --- 5. IA (Mantém chaves {}) ---
+    newText = newText.replace(/\{selection\}/gi, '<span class="macro-tag" style="border-color:#a855f7; color:#a855f7">✨ SELECTION</span>');
+
     return newText;
   };
 
   const formatAsChat = (rawText: string) => {
     if (!rawText) return [];
-    const messages = rawText.split(/\{key:\s*enter\}/gi);
+    // Quebra visualmente no [enter] para simular mensagens separadas
+    const messages = rawText.split(/\[enter\]/gi);
     return messages.map((msg) => {
       if (!msg.trim()) return null;
       let processedContent = applyDynamicTranslations(msg);
@@ -64,10 +92,14 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
 
   const handleCopy = () => {
     const textToCopy = decodeHtml(snippet.text);
-    const regex = /\{input:([a-zA-Z0-9_\s]+)\}/gi;
+    
+    // DETECÇÃO DE INPUT: Procura por [input:...]
+    // A regex pega o conteúdo dentro dos colchetes, ex: "Nome do Cliente"
+    const regex = /\[input:([^\]]+)\]/gi;
     const matches = Array.from(textToCopy.matchAll(regex));
 
     if (matches.length > 0) {
+      // Se achou inputs, manda para o Modal processar antes de copiar
       const variables = [...new Set(matches.map(m => m[1]))];
       onProcessVariables(snippet, variables);
       return; 
@@ -209,24 +241,7 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
           </button>
 
           {!isOwner && (
-            <button 
-              onClick={handleClone} 
-              disabled={isCloning} 
-              style={{ 
-                background: 'rgba(0, 243, 255, 0.1)', 
-                border: '1px solid var(--neon-cyan)', 
-                color: 'var(--neon-cyan)', 
-                cursor: 'pointer', 
-                padding: '4px 8px', 
-                borderRadius: '4px', 
-                fontSize: '0.75rem', 
-                fontFamily: 'JetBrains Mono', 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '4px' 
-              }} 
-              title="FORK"
-            >
+            <button onClick={handleClone} disabled={isCloning} style={{ background: 'rgba(0, 243, 255, 0.1)', border: '1px solid var(--neon-cyan)', color: 'var(--neon-cyan)', cursor: 'pointer', padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem', fontFamily: 'JetBrains Mono', display: 'flex', alignItems: 'center', gap: '4px' }} title="FORK">
               {isCloning ? '...' : <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2-2v1"></path></svg></>}
             </button>
           )}
@@ -241,7 +256,6 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
                 ✎
               </button>
               
-              {/* BOTÃO DELETE CORRIGIDO PARA USAR PINK AO INVÉS DE RED */}
               <button 
                 onClick={handleDeleteClick} 
                 className="btn-delete-neon"
@@ -249,7 +263,6 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
                   borderRadius: '4px', padding: '4px 8px', fontSize: '0.75rem', 
                   fontFamily: 'JetBrains Mono', cursor: 'pointer',
                   fontWeight: deleteConfirm ? 'bold' : 'normal',
-                  // Se estiver confirmando, fica rosa sólido com texto preto
                   background: deleteConfirm ? 'var(--neon-pink)' : undefined,
                   color: deleteConfirm ? '#000' : undefined
                 }} 
