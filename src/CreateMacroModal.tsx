@@ -227,9 +227,7 @@ export function CreateMacroModal({ isOpen, onClose, onSuccess, userId, macroToEd
   );
 }
 
-// Componente ToolButton Melhorado (Visual mais consistente)
 function ToolButton({ label, icon, onClick, color }: any) {
-  // Se por acaso não passar cor, fallback para branco brilhante
   const finalColor = color || '#e0e0e0';
   
   return (
@@ -237,10 +235,10 @@ function ToolButton({ label, icon, onClick, color }: any) {
       onClick={onClick}
       title={`Inserir ${label}`}
       style={{
-        background: `rgba(0,0,0,0.3)`, // Fundo leve para unificar
+        background: `rgba(0,0,0,0.3)`, 
         border: `1px solid ${finalColor}`,
         color: finalColor,
-        borderRadius: '2px', // Cantos mais retos (tech)
+        borderRadius: '2px', 
         padding: '6px 10px',
         cursor: 'pointer',
         fontFamily: 'JetBrains Mono',
@@ -248,17 +246,19 @@ function ToolButton({ label, icon, onClick, color }: any) {
         fontWeight: 'bold',
         display: 'flex', alignItems: 'center', gap: '6px',
         transition: 'all 0.2s',
-        boxShadow: `0 0 5px ${finalColor}20` // Brilho suave constante
+        boxShadow: `0 0 5px ${finalColor}20` 
       }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.background = finalColor;
-        e.currentTarget.style.color = '#000'; // Inverte cor no hover
-        e.currentTarget.style.boxShadow = `0 0 15px ${finalColor}`;
+      onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => {
+        const target = e.currentTarget as HTMLButtonElement;
+        target.style.background = finalColor;
+        target.style.color = '#000'; 
+        target.style.boxShadow = `0 0 15px ${finalColor}`;
       }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.background = 'rgba(0,0,0,0.3)';
-        e.currentTarget.style.color = finalColor;
-        e.currentTarget.style.boxShadow = `0 0 5px ${finalColor}20`;
+      onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => {
+        const target = e.currentTarget as HTMLButtonElement;
+        target.style.background = 'rgba(0,0,0,0.3)';
+        target.style.color = finalColor;
+        target.style.boxShadow = `0 0 5px ${finalColor}20`;
       }}
     >
       <span style={{ fontSize: '0.9rem' }}>{icon}</span>

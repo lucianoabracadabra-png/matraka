@@ -1,17 +1,16 @@
 import { useState } from 'react';
 import { supabase } from './supabaseClient';
-import { useToast } from './ToastContext'; // <--- Importamos o Toast
+import { useToast } from './ToastContext';
 
 export function Auth() {
-  const { addToast } = useToast(); // <--- Hook
+  const { addToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
 
-  const handleLogin = async (e: any) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     
-    // Validação básica
     if (!email) {
       addToast('DIGITE UM EMAIL VÁLIDO', 'error');
       setLoading(false);
@@ -21,8 +20,7 @@ export function Auth() {
     const { error } = await supabase.auth.signInWithOtp({ 
       email,
       options: {
-        // Redireciona para o site atual após o clique no email
-        emailRedirectTo: window.location.origin 
+        emailRedirectTo: 'https://aegis-matraka.vercel.app/' 
       }
     });
 
@@ -57,7 +55,8 @@ export function Auth() {
           type="email"
           placeholder="SEU_EMAIL@CORP.COM"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          // A CORREÇÃO ESTÁ AQUI: Tipamos o evento 'e'
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
           style={{ textAlign: 'center' }}
         />
         <button 
