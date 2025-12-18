@@ -1,3 +1,4 @@
+// ... (imports mantidos iguais) ...
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from './supabaseClient';
 import { Auth } from './Auth';
@@ -10,25 +11,8 @@ import { useToast } from './ToastContext';
 import type { Session } from '@supabase/supabase-js';
 import './index.css';
 
-interface Snippet {
-  id: string;
-  user_id: string;
-  name: string;
-  shortcut?: string;
-  text?: string;
-  app?: string;
-  sourceFile: string;
-  folderName: string;
-  likes_count: number;
-  liked_by_me: boolean;
-  author: string;
-  created_at: string;
-}
-
-interface Kit {
-  id: string;
-  name: string;
-}
+interface Snippet { id: string; user_id: string; name: string; shortcut?: string; text?: string; app?: string; sourceFile: string; folderName: string; likes_count: number; liked_by_me: boolean; author: string; created_at: string; }
+interface Kit { id: string; name: string; }
 
 function App() {
   const { addToast } = useToast();
@@ -57,6 +41,7 @@ function App() {
   const [isAddToKitOpen, setIsAddToKitOpen] = useState(false);
   const [macroIdToAdd, setMacroIdToAdd] = useState<string | null>(null);
 
+  // ... (useEffect de Sessão e fetchUserProfile mantidos iguais) ...
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -81,6 +66,7 @@ function App() {
     addToast('SESSÃO ENCERRADA', 'info');
   };
 
+  // ... (fetchMacros mantido igual) ...
   const fetchMacros = useCallback(async () => {
     if (!session) return;
     setLoading(true);
@@ -96,8 +82,7 @@ function App() {
     if (macrosError) {
       addToast('FALHA DE CONEXÃO', 'error');
     } else if (macrosData) {
-      const myLikedIds = new Set<string>(); 
-      // (Otimização: Carregamento de likes simplificado para focar na lógica principal)
+      const myLikedIds = new Set<string>(); // Mock se não usar likes na query
 
       const mappedSnippets: Snippet[] = macrosData.map((macro: any) => ({
         id: macro.id,
@@ -109,7 +94,7 @@ function App() {
         sourceFile: 'Geral', 
         folderName: 'Todas as Macros',
         likes_count: macro.macro_likes?.[0]?.count || 0,
-        liked_by_me: false, // Simplificado, reativar se buscar likes
+        liked_by_me: false,
         author: macro.profiles?.username || macro.profiles?.email?.split('@')[0] || 'Unknown',
         created_at: macro.created_at 
       }));
@@ -131,6 +116,7 @@ function App() {
     fetchMacros();
   }, [fetchMacros]);
 
+  // ... (Actions e Filtros mantidos iguais) ...
   const handleEdit = (snippet: Snippet) => { setMacroToEdit(snippet); setIsModalOpen(true); };
   const handleCreateNew = () => { setMacroToEdit(null); setIsModalOpen(true); };
   
@@ -156,10 +142,7 @@ function App() {
     }
   };
 
-  const isMacroInAnyKit = (macroId: string) => {
-    return Object.values(kitItems).some(set => set.has(macroId));
-  };
-
+  const isMacroInAnyKit = (macroId: string) => Object.values(kitItems).some(set => set.has(macroId));
   const getMacroKits = (macroId: string | null) => {
     if (!macroId) return [];
     return Object.keys(kitItems).filter(kitId => kitItems[kitId].has(macroId));
@@ -213,6 +196,7 @@ function App() {
         <div className="header">
           <div className="header-top" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
             <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+              
               <div style={{ width: '64px', height: '64px', background: 'rgba(5, 5, 10, 0.8)', border: '1px solid var(--neon-cyan)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 20px rgba(0, 243, 255, 0.2)', transform: 'skewX(-10deg)', position: 'relative', flexShrink: 0 }}>
                 <div style={{ position: 'absolute', top: '-1px', right: '-1px', width: '10px', height: '10px', background: 'var(--neon-pink)', clipPath: 'polygon(0 0, 100% 0, 100% 100%)' }}></div>
                 <svg width="42" height="42" viewBox="0 0 100 100" fill="none" strokeWidth="2" style={{ transform: 'skewX(10deg)' }}>
@@ -222,12 +206,12 @@ function App() {
                   <path d="M30 85 L70 85" stroke="var(--neon-cyan)" strokeDasharray="2 4" />
                 </svg>
               </div>
+
               <div>
                 <h1 className="title" style={{ margin: 0, fontSize: '3rem', lineHeight: 1 }}>MATRAKA</h1>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '0.5rem' }}>
-                    {/* NOME CINZA E NEUTRO */}
                     <span className="subtitle" style={{fontFamily:'JetBrains Mono', color: '#fff'}}>
-                      USER: <span style={{color: '#666', fontWeight:'bold'}}>{myUsername}</span>
+                      USER: <span style={{color: '#9ca3af', fontWeight:'bold'}}>{myUsername}</span> {/* COR MELHORADA */}
                     </span>
                     <button onClick={handleLogout} className="btn-neon" style={{ fontSize: '0.7rem', padding: '2px 8px' }}>LOGOUT</button>
                 </div>
@@ -240,6 +224,7 @@ function App() {
              <input type="text" className="search-input" placeholder="SEARCH_DATABASE..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
           </div>
 
+          {/* MENUS E TOGGLES */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginTop: '1.5rem', borderBottom: '1px solid rgba(0, 243, 255, 0.2)', paddingBottom: '0.5rem' }}>
             <div style={{ display: 'flex', gap: '1rem', overflowX: 'auto' }}>
               {['ALL', 'MINE', 'FAVS', 'KITS'].map((tab) => {
@@ -273,6 +258,43 @@ function App() {
           )}
         </div>
 
-        {/* LOADING GLITCH (SUBSTITUI O SPINNER) */}
+        {/* LOADING GLITCH */}
         {loading && (
-          <div className="loading"
+          <div className="loading" style={{ flexDirection: 'column', gap: '1rem' }}>
+            <div className="glitch-text" data-text="LOADING_SYSTEM...">LOADING_SYSTEM...</div>
+          </div>
+        )}
+
+        {!loading && Object.entries(groupedSnippets).map(([fileName, snippets]) => (
+          <div key={fileName} className="file-group">
+            <div className="snippets-grid" style={{ marginTop: '1rem' }}>
+              {snippets.map((snippet) => (
+                <SnippetCard 
+                  key={snippet.id} 
+                  snippet={snippet} 
+                  userId={session.user.id} 
+                  onDelete={() => fetchMacros()}
+                  onEdit={handleEdit}
+                  onProcessVariables={handleProcessVariables}
+                  onAddToKit={handleAddToKit}
+                  initialLikes={snippet.likes_count}
+                  initialLiked={snippet.liked_by_me}
+                  isInKit={isMacroInAnyKit(snippet.id)}
+                />
+              ))}
+            </div>
+          </div>
+        ))}
+
+        <CreateMacroModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={() => fetchMacros()} userId={session.user.id} macroToEdit={macroToEdit} />
+        <ProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} userId={session.user.id} onUpdate={() => { fetchUserProfile(session.user.id); fetchMacros(); }} />
+        <InputVariableModal isOpen={isInputModalOpen} onClose={() => setIsInputModalOpen(false)} variables={varsToProcess} originalText={macroToProcess?.text || ''} />
+        <AddToKitModal isOpen={isAddToKitOpen} onClose={() => { setIsAddToKitOpen(false); fetchMacros(); }} userId={session.user.id} macroId={macroIdToAdd} macroKits={getMacroKits(macroIdToAdd)} />
+
+      </div>
+      <style>{`@keyframes fadeIn { from { opacity:0; transform:translateY(-5px); } to { opacity:1; transform:translateY(0); } }`}</style>
+    </>
+  );
+}
+
+export default App;

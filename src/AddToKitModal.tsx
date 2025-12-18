@@ -95,20 +95,35 @@ export function AddToKitModal({ isOpen, onClose, userId, macroId, macroKits = []
                 onClick={() => handleToggleKit(kit.id)}
                 disabled={loading}
                 style={{
-                  // FEEDBACK VISUAL FORTE PARA SELECIONADO
-                  background: isAdded ? 'var(--neon-cyan)' : 'rgba(0, 0, 0, 0.3)',
-                  border: isAdded ? '1px solid var(--neon-cyan)' : '1px solid #444',
-                  color: isAdded ? '#000' : '#888',
-                  padding: '10px 12px', borderRadius: '2px',
+                  // VERDE NEON para itens selecionados (Consistência com o Card)
+                  background: isAdded ? 'rgba(0, 255, 0, 0.15)' : 'rgba(0, 0, 0, 0.3)',
+                  border: isAdded ? '1px solid #00ff00' : '1px solid #444',
+                  color: isAdded ? '#00ff00' : '#888',
+                  padding: '12px', borderRadius: '2px',
                   textAlign: 'left', cursor: 'pointer', fontFamily: 'JetBrains Mono',
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  transition: 'all 0.2s', fontSize: '0.8rem', textTransform: 'uppercase',
-                  fontWeight: isAdded ? 'bold' : 'normal',
-                  boxShadow: isAdded ? '0 0 10px rgba(0,243,255,0.4)' : 'none'
+                  transition: 'all 0.2s',
+                  boxShadow: isAdded ? '0 0 10px rgba(0, 255, 0, 0.2)' : 'none'
+                }}
+                onMouseEnter={(e) => {
+                   if(!isAdded) {
+                     e.currentTarget.style.borderColor = 'var(--neon-cyan)';
+                     e.currentTarget.style.color = '#fff';
+                     e.currentTarget.style.background = 'rgba(0, 243, 255, 0.05)';
+                   }
+                }}
+                onMouseLeave={(e) => {
+                   if(!isAdded) {
+                     e.currentTarget.style.borderColor = '#444';
+                     e.currentTarget.style.color = '#888';
+                     e.currentTarget.style.background = 'rgba(0, 0, 0, 0.3)';
+                   }
                 }}
               >
-                <span>📁 {kit.name}</span>
-                <span>{isAdded ? '[ LINKED ]' : '[ ADD ]'}</span>
+                <span style={{ fontWeight: 'bold' }}>📁 {kit.name}</span>
+                <span style={{ fontSize: '0.7rem', fontWeight: 'bold', opacity: isAdded ? 1 : 0.6 }}>
+                  {isAdded ? '[ LINKED ]' : '[ ADD ]'}
+                </span>
               </button>
             )
           })}
@@ -124,8 +139,19 @@ export function AddToKitModal({ isOpen, onClose, userId, macroId, macroKits = []
               placeholder="NOME DO KIT..."
               style={{ padding: '10px', fontFamily:'JetBrains Mono', fontSize:'0.8rem' }}
             />
+            {/* Botão com classe cyber-btn-main para ter o efeito glitch */}
             <button 
               onClick={handleCreateKit}
               disabled={loading || !newKitName}
               className="cyber-btn-main"
               style={{ padding: '0 20px', fontSize: '0.8rem', minWidth: 'auto' }}
+            >
+              CRIAR
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+}
