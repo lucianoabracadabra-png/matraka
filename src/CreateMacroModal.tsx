@@ -20,7 +20,6 @@ export function CreateMacroModal({ isOpen, onClose, onSuccess, userId, macroToEd
   const [shortcut, setShortcut] = useState('');
   const [appCategory, setAppCategory] = useState('TEXT');
 
-  // Estado para o menu de "Aguarde"
   const [showWaitMenu, setShowWaitMenu] = useState(false);
 
   useEffect(() => {
@@ -37,20 +36,14 @@ export function CreateMacroModal({ isOpen, onClose, onSuccess, userId, macroToEd
     }
   }, [macroToEdit, isOpen]);
 
-  // --- FUNÇÃO MÁGICA DE INSERÇÃO ---
   const insertTag = (tag: string) => {
     if (!textareaRef.current) return;
-
     const start = textareaRef.current.selectionStart;
     const end = textareaRef.current.selectionEnd;
     const text = content;
-    
-    // Insere a tag onde o cursor está
     const newText = text.substring(0, start) + tag + text.substring(end);
-    
     setContent(newText);
     
-    // Devolve o foco e move o cursor para depois da tag
     setTimeout(() => {
       if (textareaRef.current) {
         textareaRef.current.focus();
@@ -150,26 +143,29 @@ export function CreateMacroModal({ isOpen, onClose, onSuccess, userId, macroToEd
           <div>
             <label className="cyber-label">DATA_CONTENT</label>
             
-            {/* --- BARRA DE FERRAMENTAS (TOOLKIT) --- */}
+            {/* --- BARRA DE FERRAMENTAS PADRONIZADA --- */}
             <div style={{ 
               display: 'flex', gap: '0.5rem', marginBottom: '0.5rem', flexWrap: 'wrap',
-              background: 'rgba(255,255,255,0.02)', padding: '0.5rem', borderRadius: '4px', border: '1px solid #333'
+              background: 'rgba(0, 0, 0, 0.3)', padding: '0.5rem', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.1)'
             }}>
               
-              <ToolButton label="CURSOR" icon="⌶" onClick={() => insertTag('{cursor}')} />
-              <ToolButton label="CLIPBOARD" icon="📋" onClick={() => insertTag('{clipboard}')} />
+              {/* GRUPO 1: Ferramentas de Sistema (CYAN) */}
+              <ToolButton label="CURSOR" icon="⌶" onClick={() => insertTag('{cursor}')} color="var(--neon-cyan)" />
+              <ToolButton label="CLIPBOARD" icon="📋" onClick={() => insertTag('{clipboard}')} color="var(--neon-cyan)" />
               
-              <div style={{ width: '1px', background: '#444', margin: '0 0.2rem' }}></div>
+              <div style={{ width: '1px', background: 'rgba(255,255,255,0.2)', margin: '0 0.2rem' }}></div>
               
+              {/* GRUPO 2: Entidades (ROXO) */}
               <ToolButton label="CLIENTE" icon="👤" onClick={() => insertTag('{client}')} color="var(--neon-purple)" />
               <ToolButton label="AGENTE" icon="🎧" onClick={() => insertTag('{agent}')} color="var(--neon-purple)" />
-              <ToolButton label="DATA" icon="📅" onClick={() => insertTag('{date}')} />
               
-              <div style={{ width: '1px', background: '#444', margin: '0 0.2rem' }}></div>
+              <div style={{ width: '1px', background: 'rgba(255,255,255,0.2)', margin: '0 0.2rem' }}></div>
+
+              {/* GRUPO 3: Dados e Controle (CYAN e ROSA) */}
+              <ToolButton label="DATA" icon="📅" onClick={() => insertTag('{date}')} color="var(--neon-cyan)" />
+              <ToolButton label="ENTER" icon="↵" onClick={() => insertTag('{key:enter}')} color="var(--neon-cyan)" />
               
-              <ToolButton label="ENTER" icon="↵" onClick={() => insertTag('{key:enter}')} />
-              
-              {/* BOTÃO AGUARDE COM MENU DROPUP */}
+              {/* Botão Wait (ROSA) */}
               <div style={{ position: 'relative' }}>
                 <ToolButton 
                   label="AGUARDE..." 
@@ -181,32 +177,25 @@ export function CreateMacroModal({ isOpen, onClose, onSuccess, userId, macroToEd
                 {showWaitMenu && (
                   <div style={{
                     position: 'absolute', bottom: '110%', left: 0,
-                    background: '#000', border: '1px solid var(--neon-pink)',
+                    background: '#05050a', border: '1px solid var(--neon-pink)',
                     display: 'flex', flexDirection: 'column', gap: '2px', padding: '4px',
-                    zIndex: 10, boxShadow: '0 0 15px rgba(255,0,85,0.3)'
+                    zIndex: 10, boxShadow: '0 0 15px rgba(255,0,85,0.3)',
+                    minWidth: '100px'
                   }}>
                     {[1, 2, 3, 5, 10].map(sec => (
                       <button
                         key={sec}
                         onClick={() => { insertTag(`{wait:${sec}s}`); setShowWaitMenu(false); }}
                         style={{
-                          background: 'transparent', border: 'none', color: '#fff',
-                          padding: '4px 8px', cursor: 'pointer', fontFamily: 'monospace',
-                          textAlign: 'left', fontSize: '0.8rem'
+                          background: 'rgba(255, 0, 85, 0.1)', border: 'none', color: '#fff',
+                          padding: '6px', cursor: 'pointer', fontFamily: 'JetBrains Mono',
+                          textAlign: 'left', fontSize: '0.8rem', marginBottom: '1px'
                         }}
                         className="hover-pink"
                       >
                         +{sec}s
                       </button>
                     ))}
-                    <div style={{ borderTop: '1px solid #333', marginTop: '2px', paddingTop: '2px' }}>
-                      <button 
-                        onClick={() => { insertTag('{wait:1s}'); setShowWaitMenu(false); }} 
-                        style={{ fontSize: '0.7rem', color: '#666', background: 'none', border: 'none', cursor: 'pointer', width: '100%' }}
-                      >
-                        CUSTOM
-                      </button>
-                    </div>
                   </div>
                 )}
               </div>
@@ -231,7 +220,6 @@ export function CreateMacroModal({ isOpen, onClose, onSuccess, userId, macroToEd
         </div>
       </div>
       
-      {/* Estilo local para o hover do menu rosa */}
       <style>{`
         .hover-pink:hover { background: var(--neon-pink) !important; color: #000 !important; }
       `}</style>
@@ -239,37 +227,42 @@ export function CreateMacroModal({ isOpen, onClose, onSuccess, userId, macroToEd
   );
 }
 
-// Componente auxiliar para os botões da Toolbar
+// Componente ToolButton Melhorado (Visual mais consistente)
 function ToolButton({ label, icon, onClick, color }: any) {
+  // Se por acaso não passar cor, fallback para branco brilhante
+  const finalColor = color || '#e0e0e0';
+  
   return (
     <button 
       onClick={onClick}
       title={`Inserir ${label}`}
       style={{
-        background: 'transparent',
-        border: `1px solid ${color || '#444'}`,
-        color: color || '#888',
-        borderRadius: '3px',
-        padding: '4px 8px',
+        background: `rgba(0,0,0,0.3)`, // Fundo leve para unificar
+        border: `1px solid ${finalColor}`,
+        color: finalColor,
+        borderRadius: '2px', // Cantos mais retos (tech)
+        padding: '6px 10px',
         cursor: 'pointer',
         fontFamily: 'JetBrains Mono',
-        fontSize: '0.75rem',
+        fontSize: '0.7rem',
+        fontWeight: 'bold',
         display: 'flex', alignItems: 'center', gap: '6px',
-        transition: 'all 0.2s'
+        transition: 'all 0.2s',
+        boxShadow: `0 0 5px ${finalColor}20` // Brilho suave constante
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = color || 'var(--neon-cyan)';
-        e.currentTarget.style.color = color || 'var(--neon-cyan)';
-        e.currentTarget.style.boxShadow = `0 0 8px ${color || 'rgba(0,243,255,0.2)'}`;
+        e.currentTarget.style.background = finalColor;
+        e.currentTarget.style.color = '#000'; // Inverte cor no hover
+        e.currentTarget.style.boxShadow = `0 0 15px ${finalColor}`;
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = color || '#444';
-        e.currentTarget.style.color = color || '#888';
-        e.currentTarget.style.boxShadow = 'none';
+        e.currentTarget.style.background = 'rgba(0,0,0,0.3)';
+        e.currentTarget.style.color = finalColor;
+        e.currentTarget.style.boxShadow = `0 0 5px ${finalColor}20`;
       }}
     >
-      <span>{icon}</span>
-      <span style={{ fontWeight: 'bold' }}>{label}</span>
+      <span style={{ fontSize: '0.9rem' }}>{icon}</span>
+      <span>{label}</span>
     </button>
   );
 }
