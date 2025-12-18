@@ -1,139 +1,156 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from './supabaseClient';
+import { useToast } from './ToastContext';
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: () => void; // Para avisar o App que salvou e precisa recarregar a lista
+  onSuccess: () => void;
   userId: string;
+  macroToEdit?: any | null; // <--- NOVO PROP: A macro que vamos editar
 }
 
-export function CreateMacroModal({ isOpen, onClose, onSuccess, userId }: Props) {
+export function CreateMacroModal({ isOpen, onClose, onSuccess, userId, macroToEdit }: Props) {
+  const { addToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [shortcut, setShortcut] = useState('');
-  const [appCategory, setAppCategory] = useState('TEXT'); // TEXT ou AI
-  const [isPublic, setIsPublic] = useState(true);
+  const [appCategory, setAppCategory] = useState('TEXT');
 
-  if (!isOpen) return null;
+  // Se receber uma macro para editar, preenche os campos
+  useEffect(() => {
+    if (macroToEdit) {
+      setTitle(macroToEdit.name);
+      setContent(macroToEdit.text);
+      setShortcut(macroToEdit.shortcut || '');
+      setAppCategory(macroToEdit.app || 'TEXT');
+    } else {
+      // Limpa se for criar nova
+      setTitle('');
+      setContent('');
+      setShortcut('');
+      setAppCategory('TEXT');
+    }
+  }, [macroToEdit, isOpen]);
 
-  const handleSubmit = async (e: any) => {
-    e.preventDefault();
+  const handleSave = async () => {
+    if (!title || !content) {
+      addToast('PREENCHA O NOME E O CONTEÚDO', 'error');
+      return;
+    }
+
     setLoading(true);
 
-    const { error } = await supabase.from('macros').insert({
-      user_id: userId,
-      title,
-      content,
-      shortcut,
-      app_category: appCategory,
-      type: 'text', // Default
-      is_public: isPublic
-    });
+    let error;
+
+    if (macroToEdit) {
+      // --- MODO EDIÇÃO (UPDATE) ---
+      const { error: updateError } = await supabase
+        .from('macros')
+        .update({
+          title,
+          content,
+          shortcut,
+          app_category: appCategory,
+          updated_at: new Date()
+        })
+        .eq('id', macroToEdit.id)
+        .eq('user_id', userId); // Garante que só edita se for sua
+      
+      error = updateError;
+    } else {
+      // --- MODO CRIAÇÃO (INSERT) ---
+      const { error: insertError } = await supabase
+        .from('macros')
+        .insert({
+          user_id: userId,
+          title,
+          content,
+          shortcut,
+          app_category: appCategory,
+          type: 'text',
+          is_public: false
+        });
+      
+      error = insertError;
+    }
 
     setLoading(false);
 
     if (error) {
-      alert('Erro ao criar macro: ' + error.message);
+      addToast('ERRO AO SALVAR: ' + error.message, 'error');
     } else {
-      // Limpa o form
-      setTitle('');
-      setContent('');
-      setShortcut('');
-      onSuccess(); // Avisa o pai
-      onClose();   // Fecha o modal
+      addToast(macroToEdit ? 'MACRO ATUALIZADA!' : 'MACRO CRIADA!', 'success');
+      onSuccess();
+      onClose();
+      // Limpa campos
+      if (!macroToEdit) {
+        setTitle('');
+        setContent('');
+        setShortcut('');
+      }
     }
   };
+
+  if (!isOpen) return null;
 
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 50,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      backdropFilter: 'blur(5px)', backgroundColor: 'rgba(0,0,0,0.5)'
+      backdropFilter: 'blur(5px)', backgroundColor: 'rgba(0, 0, 0, 0.7)'
     }}>
-      <div className="snippet-card" style={{ 
-        width: '100%', maxWidth: '500px', 
-        border: '1px solid #475569', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)' 
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <h2 className="title" style={{ fontSize: '1.5rem', margin: 0 }}>Nova Macro</h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '1.5rem' }}>&times;</button>
+      <div className="snippet-card" style={{ width: '100%', maxWidth: '500px', border: '1px solid var(--neon-cyan)', background: '#05050a' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+          <h2 className="title" style={{ fontSize: '1.5rem', margin: 0, color: '#fff' }}>
+            {macroToEdit ? 'EDIT_MACRO' : 'NEW_MACRO'}
+          </h2>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--neon-pink)', cursor: 'pointer', fontSize: '1.2rem' }}>[X]</button>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <input 
+            className="search-input" 
+            placeholder="NOME DA MACRO (Ex: Saudação)" 
+            value={title} onChange={e => setTitle(e.target.value)}
+          />
           
-          {/* Título e Atalho */}
           <div style={{ display: 'flex', gap: '1rem' }}>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', color: '#94a3b8', fontSize: '0.8rem', marginBottom: '0.2rem' }}>Nome</label>
-              <input 
-                required
-                className="search-input" 
-                value={title} onChange={e => setTitle(e.target.value)} 
-                placeholder="Ex: Saudação"
-              />
-            </div>
-            <div style={{ width: '120px' }}>
-              <label style={{ display: 'block', color: '#94a3b8', fontSize: '0.8rem', marginBottom: '0.2rem' }}>Atalho</label>
-              <input 
-                className="search-input" 
-                value={shortcut} onChange={e => setShortcut(e.target.value)} 
-                placeholder="'ola"
-              />
-            </div>
-          </div>
-
-          {/* Conteúdo */}
-          <div>
-            <label style={{ display: 'block', color: '#94a3b8', fontSize: '0.8rem', marginBottom: '0.2rem' }}>Conteúdo</label>
-            <textarea 
-              required
+            <input 
               className="search-input" 
-              value={content} onChange={e => setContent(e.target.value)} 
-              placeholder="Olá {cursor}, tudo bem?"
-              style={{ minHeight: '120px', resize: 'vertical', fontFamily: 'monospace' }}
+              placeholder="ATALHO (Ex: /oi)" 
+              value={shortcut} onChange={e => setShortcut(e.target.value)}
+              style={{ flex: 1 }}
             />
+            <select 
+              className="search-input" 
+              value={appCategory} onChange={e => setAppCategory(e.target.value)}
+              style={{ width: '120px' }}
+            >
+              <option value="TEXT">TEXT</option>
+              <option value="AI">AI</option>
+              <option value="CODE">CODE</option>
+            </select>
           </div>
 
-          {/* Categoria e Visibilidade */}
-          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', color: '#94a3b8', fontSize: '0.8rem', marginBottom: '0.2rem' }}>Categoria</label>
-              <select 
-                className="search-input"
-                value={appCategory} onChange={e => setAppCategory(e.target.value)}
-              >
-                <option value="TEXT">Texto (Azul)</option>
-                <option value="AI">AI Prompt (Roxo)</option>
-              </select>
-            </div>
-            
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', color: '#e2e8f0', marginTop: '1rem' }}>
-              <input 
-                type="checkbox" 
-                checked={isPublic} 
-                onChange={e => setIsPublic(e.target.checked)}
-              />
-              <span>Pública?</span>
-            </label>
-          </div>
+          <textarea 
+            className="search-input" 
+            placeholder="CONTEÚDO DA MACRO..." 
+            rows={8}
+            value={content} onChange={e => setContent(e.target.value)}
+            style={{ fontFamily: 'monospace' }}
+          />
 
           <button 
-            type="submit" 
+            onClick={handleSave} 
             disabled={loading}
-            style={{
-              marginTop: '1rem',
-              background: 'linear-gradient(135deg, #10b981, #059669)',
-              border: 'none', padding: '0.8rem', borderRadius: '8px',
-              color: 'white', fontWeight: 'bold', cursor: 'pointer',
-              opacity: loading ? 0.7 : 1
-            }}
+            className="btn-create" 
+            style={{ width: '100%', marginTop: '1rem' }}
           >
-            {loading ? 'Salvando...' : 'Criar Macro'}
+            {loading ? 'SAVING...' : (macroToEdit ? 'UPDATE_SYSTEM' : 'COMPILE_MACRO')}
           </button>
-
-        </form>
+        </div>
       </div>
     </div>
   );
