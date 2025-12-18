@@ -68,18 +68,24 @@ function App() {
     if (!session) return;
     setLoading(true);
     
+    // Busca as macros
     const { data: macrosData, error: macrosError } = await supabase
       .from('macros')
       .select('*, macro_likes(count), profiles!macros_user_id_fkey(username, email)')
       .order('created_at', { ascending: false });
 
+    // Busca os likes do usuário atual
+    const { data: myLikesData } = await supabase.from('macro_likes').select('macro_id').eq('user_id', session.user.id);
+    
+    // Busca kits e itens
     const { data: kitsData } = await supabase.from('kits').select('*').eq('user_id', session.user.id).order('created_at');
     const { data: itemsData } = await supabase.from('kit_items').select('kit_id, macro_id');
 
     if (macrosError) {
       addToast('FALHA DE CONEXÃO', 'error');
     } else if (macrosData) {
-      const myLikedIds = new Set<string>();
+      // Cria um Set com os IDs que eu curti
+      const myLikedIds = new Set(myLikesData?.map((l: any) => l.macro_id) || []);
 
       const mappedSnippets: Snippet[] = macrosData.map((macro: any) => ({
         id: macro.id,
@@ -91,7 +97,7 @@ function App() {
         sourceFile: 'Geral', 
         folderName: 'Todas as Macros',
         likes_count: macro.macro_likes?.[0]?.count || 0,
-        liked_by_me: false,
+        liked_by_me: myLikedIds.has(macro.id), // AQUI: Agora a variável é usada corretamente
         author: macro.profiles?.username || macro.profiles?.email?.split('@')[0] || 'Unknown',
         created_at: macro.created_at 
       }));
@@ -138,10 +144,7 @@ function App() {
     }
   };
 
-  const isMacroInAnyKit = (macroId: string) => {
-    return Object.values(kitItems).some(set => set.has(macroId));
-  };
-
+  const isMacroInAnyKit = (macroId: string) => Object.values(kitItems).some(set => set.has(macroId));
   const getMacroKits = (macroId: string | null) => {
     if (!macroId) return [];
     return Object.keys(kitItems).filter(kitId => kitItems[kitId].has(macroId));
@@ -243,6 +246,7 @@ function App() {
           {activeTab === 'KITS' && (
               <div style={{ display: 'flex', gap: '0.8rem', padding: '1rem 0', overflowX: 'auto', borderBottom: '1px solid rgba(255,255,255,0.1)', animation: 'fadeIn 0.3s' }}>
                   <button onClick={() => setIsAddToKitOpen(true)} style={{ background: 'var(--neon-pink)', color: '#000', border: 'none', borderRadius: '4px', padding: '6px 12px', cursor: 'pointer', fontWeight:'bold', fontSize:'0.8rem', fontFamily: 'JetBrains Mono' }}>+ NOVO KIT</button>
+                  {myKits.length === 0 && <span style={{color:'#666', fontSize:'0.8rem', alignSelf:'center'}}>Crie seu primeiro kit!</span>}
                   {myKits.map(kit => (
                       <div key={kit.id} style={{display:'flex', alignItems:'center', background: selectedKitId === kit.id ? 'rgba(0, 243, 255, 0.1)' : 'rgba(255,255,255,0.05)', borderRadius:'4px', border: selectedKitId === kit.id ? '1px solid var(--neon-cyan)' : '1px solid #444'}}>
                           <button onClick={() => setSelectedKitId(kit.id)} style={{ background: 'transparent', border: 'none', color: selectedKitId === kit.id ? 'var(--neon-cyan)':'#fff', padding: '6px 12px', cursor: 'pointer', fontFamily: 'JetBrains Mono', fontSize: '0.8rem', fontWeight: selectedKitId === kit.id ? 'bold':'normal' }}>
