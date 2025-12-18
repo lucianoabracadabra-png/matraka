@@ -90,10 +90,32 @@ export function SnippetCard({ snippet, userId, onDelete, initialLikes, initialLi
   const cardClass = appType === 'AI' ? 'card-ai' : 'card-text';
   const isOwner = snippet.user_id === userId;
   
-  // Data formatada
-  const formattedDate = new Date(snippet.created_at).toLocaleDateString('pt-BR', {
-    day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit'
-  });
+// --- FORMATAÇÃO DE DATA BLINDADA ---
+  let formattedDate = '...'; 
+  
+  if (snippet.created_at) {
+    try {
+      // Truque: Troca o espaço por T para o JavaScript entender universalmente
+      // e garante que não quebre se já tiver o T
+      const safeDateString = snippet.created_at.replace(' ', 'T');
+      const dateObj = new Date(safeDateString);
+
+      if (!isNaN(dateObj.getTime())) {
+        formattedDate = dateObj.toLocaleDateString('pt-BR', {
+          day: '2-digit', 
+          month: '2-digit', 
+          year: '2-digit', 
+          hour: '2-digit', 
+          minute: '2-digit'
+        });
+      } else {
+        formattedDate = 'Data Inválida';
+      }
+    } catch (e) {
+      console.warn('Erro ao processar data:', e);
+      formattedDate = 'Erro';
+    }
+  }
 
   return (
     <div className={`snippet-card ${cardClass}`} style={{ opacity: isDeleting ? 0.5 : 1, display: 'flex', flexDirection: 'column', height: '100%' }}>

@@ -56,17 +56,23 @@ function App() {
     } else if (macrosData) {
       const myLikedIds = new Set(myLikesData?.map((l: any) => l.macro_id) || []);
 
+// Dentro de fetchMacros...
       const mappedSnippets: Snippet[] = macrosData.map((macro: any) => ({
         id: macro.id,
         user_id: macro.user_id,
         name: macro.title,
         text: macro.content,
         shortcut: macro.shortcut,
-        app: macro.app_category,
+        app: macro.app_category || 'TEXT',
         sourceFile: 'Geral', 
         folderName: 'Todas as Macros',
         likes_count: macro.macro_likes?.[0]?.count || 0,
-        liked_by_me: myLikedIds.has(macro.id)
+        liked_by_me: myLikedIds.has(macro.id),
+        author: macro.profiles?.username || macro.profiles?.email?.split('@')[0] || 'Unknown',
+        
+        // --- ESTA LINHA É A CHAVE ---
+        created_at: macro.created_at 
+        // ---------------------------
       }));
       
       setAllSnippets(mappedSnippets);
