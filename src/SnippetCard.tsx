@@ -23,6 +23,12 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
   const [isLikeLoading, setIsLikeLoading] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
 
+  // LISTA DE ADMINS (Partes do nome que identificam a equipe)
+  const ADMIN_TAGS = ['ADM', 'GAB', 'DAY', 'RIO', 'LUC'];
+  
+  // Verifica se o autor é admin (case insensitive)
+  const isAdmin = ADMIN_TAGS.some(tag => snippet.author?.toUpperCase().includes(tag));
+
   useEffect(() => {
     if (deleteConfirm) {
       const timer = setTimeout(() => setDeleteConfirm(false), 3000);
@@ -42,29 +48,16 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
     let newText = text;
 
     // --- SINTAXE V15 (MATRAKA ENGINE) ---
-
-    // 1. TEMPO [wait:1] ou [wait+1s]
     newText = newText.replace(/\[wait:([\d\.]+)\]/gi, '<span class="macro-tag tag-wait">⏳ $1s</span>');
     newText = newText.replace(/\[wait\+([\d\.]+)s\]/gi, '<span class="macro-tag tag-wait">⏳ +$1s</span>');
-
-    // 2. INPUT [input:Label] (Rosa Neon)
     newText = newText.replace(/\[input:([^\]]+)\]/gi, '<span class="macro-tag" style="border-color:var(--neon-pink); color:var(--neon-pink); background:rgba(255,0,255,0.1)">✍ $1</span>');
-    
-    // 3. AGENTE E SISTEMA
     newText = newText.replace(/\[agente\]/gi, '<span class="macro-tag tag-theme">🎧 AGENTE</span>');
     newText = newText.replace(/\[paste\]/gi, '<span class="macro-tag tag-clipboard">📋 CLIPBOARD</span>');
-
-    // 4. WEB SCRAPER [dom:Seletor] (Laranja)
     newText = newText.replace(/\[dom:([^\]]+)\]/gi, '<span class="macro-tag" style="border-color:#f59e0b; color:#f59e0b; background:rgba(245,158,11,0.1)">🕸️ DOM: $1</span>');
-
-    // 5. NAVEGAÇÃO E TECLAS
     newText = newText.replace(/\[cursor\]/gi, '<span class="macro-tag tag-cursor">I</span>'); 
     newText = newText.replace(/\[enter\]/gi, '<span class="macro-tag tag-wait">↵ ENTER</span>');
     newText = newText.replace(/\[tab\]/gi, '<span class="macro-tag tag-wait">⇥ TAB</span>');
     newText = newText.replace(/\[key:([^\]]+)\]/gi, '<span class="macro-tag tag-wait">⌨️ $1</span>');
-
-    // 6. INTEGRAÇÃO IA (Roxo Neon)
-    // A tag de IA é {selection} (chaves), diferente das outras (colchetes)
     newText = newText.replace(/\{selection\}/gi, '<span class="macro-tag" style="border-color:#a855f7; color:#a855f7; font-weight:bold; box-shadow:0 0 5px #a855f7">✨ SELECTION (IA)</span>');
 
     return newText;
@@ -72,7 +65,6 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
 
   const formatAsChat = (rawText: string) => {
     if (!rawText) return [];
-    // Quebra visualmente no [enter] para simular chat
     const messages = rawText.split(/\[enter\]/gi);
     return messages.map((msg) => {
       if (!msg.trim()) return null;
@@ -84,8 +76,6 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
 
   const handleCopy = () => {
     const textToCopy = decodeHtml(snippet.text);
-    
-    // DETECÇÃO DE INPUTS para o Modal Web
     const regex = /\[input:([^\]]+)\]/gi;
     const matches = Array.from(textToCopy.matchAll(regex));
 
@@ -131,7 +121,7 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
       content: snippet.text,
       shortcut: snippet.shortcut ? `${snippet.shortcut}_copy` : '',
       app_category: snippet.app || 'TEXT',
-      type: snippet.app === 'AI' ? 'ai' : 'text', // Mantém o tipo correto ao clonar
+      type: snippet.app === 'AI' ? 'ai' : 'text',
       is_public: false
     });
 
@@ -190,8 +180,28 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
         </span>
       </div>
 
-      <div style={{ fontFamily: 'JetBrains Mono', fontSize: '0.75rem', color: '#64748b', marginBottom: '1rem', textTransform: 'uppercase' }}>
-        DEV_ID: <span style={{ color: '#94a3b8' }}>{snippet.author}</span>
+      {/* ÁREA DO DEV_ID COM BADGE DE ADMIN */}
+      <div style={{ fontFamily: 'JetBrains Mono', fontSize: '0.75rem', color: '#64748b', marginBottom: '1rem', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <span>DEV_ID: <span style={{ color: '#94a3b8' }}>{snippet.author}</span></span>
+        
+        {/* RENDERIZA O BADGE SE FOR ADMIN */}
+        {isAdmin && (
+          <span style={{ 
+            border: '1px solid #ffd700', 
+            color: '#ffd700', 
+            background: 'rgba(255, 215, 0, 0.1)', 
+            padding: '2px 6px', 
+            borderRadius: '4px', 
+            fontSize: '0.65rem', 
+            fontWeight: 'bold',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '3px',
+            boxShadow: '0 0 5px rgba(255, 215, 0, 0.2)'
+          }}>
+            ⭐ TEAM
+          </span>
+        )}
       </div>
 
       <div 
