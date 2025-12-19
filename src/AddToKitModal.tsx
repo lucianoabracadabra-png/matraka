@@ -21,7 +21,7 @@ export function AddToKitModal({ isOpen, onClose, userId, macroId, macroKits }: P
   const [newKitName, setNewKitName] = useState('');
   const [loading, setLoading] = useState(false);
   
-  // Estado local para controlar visualmente o que está marcado, sem depender de re-fetch lento
+  // Estado local para controle visual instantâneo
   const [localMacroKits, setLocalMacroKits] = useState<Set<string>>(new Set(macroKits));
 
   useEffect(() => {
@@ -39,34 +39,34 @@ export function AddToKitModal({ isOpen, onClose, userId, macroId, macroKits }: P
   const toggleKit = async (kitId: string) => {
     if (!macroId) return;
     
-    // Se já tem, remove
-    if (localMacroKits.has(kitId)) {
-      // Atualiza visualmente primeiro (Otimista)
-      const prevSet = new Set(localMacroKits);
-      const newSet = new Set(localMacroKits);
-      newSet.delete(kitId);
-      setLocalMacroKits(newSet);
+    // LÓGICA OTIMISTA: Atualiza visualmente ANTES do banco
+    const isCurrentlyAdded = localMacroKits.has(kitId);
+    
+    // Atualiza estado local imediatamente
+    setLocalMacroKits(prev => {
+      const next = new Set(prev);
+      if (isCurrentlyAdded) next.delete(kitId);
+      else next.add(kitId);
+      return next;
+    });
 
+    if (isCurrentlyAdded) {
+      // Remover do Banco
       const { error } = await supabase.from('kit_items').delete().eq('kit_id', kitId).eq('macro_id', macroId);
       if (error) {
-        setLocalMacroKits(prevSet); // Reverte se der erro
         addToast('ERRO AO REMOVER', 'error');
+        // Reverte em caso de erro
+        setLocalMacroKits(prev => { const n = new Set(prev); n.add(kitId); return n; });
       } else {
-        addToast('REMOVIDO DO KIT', 'info');
+        // addToast('REMOVIDO', 'info'); // Opcional: Feedback silencioso é melhor aqui
       }
-    } 
-    // Se não tem, adiciona
-    else {
-      // Atualiza visualmente primeiro (Otimista)
-      const prevSet = new Set(localMacroKits);
-      const newSet = new Set(localMacroKits);
-      newSet.add(kitId);
-      setLocalMacroKits(newSet);
-
+    } else {
+      // Adicionar ao Banco
       const { error } = await supabase.from('kit_items').insert({ kit_id: kitId, macro_id: macroId });
       if (error) {
-        setLocalMacroKits(prevSet); // Reverte se der erro
         addToast('ERRO AO ADICIONAR', 'error');
+        // Reverte em caso de erro
+        setLocalMacroKits(prev => { const n = new Set(prev); n.delete(kitId); return n; });
       } else {
         addToast('SALVO NO KIT', 'success');
       }
@@ -77,7 +77,7 @@ export function AddToKitModal({ isOpen, onClose, userId, macroId, macroKits }: P
     if (!newKitName.trim()) return;
     setLoading(true);
 
-    // 1. Cria o Kit no Banco
+    // 1. Cria o Kit
     const { data: newKit, error: createError } = await supabase
       .from('kits')
       .insert({ name: newKitName, user_id: userId })
@@ -90,27 +90,22 @@ export function AddToKitModal({ isOpen, onClose, userId, macroId, macroKits }: P
       return;
     }
 
-    // 2. Se tiver sucesso e tivermos uma macro para linkar
     if (newKit) {
-      // Atualiza a lista de kits imediatamente para o usuário ver
+      // Adiciona na lista visualmente agora
       setKits(prev => [...prev, newKit]);
       
+      // 2. Se tem macro, vincula automaticamente
       if (macroId) {
-        // Tenta linkar a macro ao novo kit
         const { error: linkError } = await supabase
           .from('kit_items')
           .insert({ kit_id: newKit.id, macro_id: macroId });
 
         if (linkError) {
-          addToast('KIT CRIADO, MAS FALHA AO VINCULAR', 'error'); // Corrigido warning -> error
+          addToast('KIT CRIADO (ERRO AO VINCULAR)', 'error');
         } else {
-          // SUCESSO TOTAL: Atualiza o set local para ficar VERDE imediatamente
-          setLocalMacroKits(prev => {
-            const next = new Set(prev);
-            next.add(newKit.id);
-            return next;
-          });
-          addToast('KIT CRIADO E VINCULADO!', 'success');
+          // Marca como adicionado visualmente
+          setLocalMacroKits(prev => { const n = new Set(prev); n.add(newKit.id); return n; });
+          addToast('KIT CRIADO & VINCULADO!', 'success');
         }
       } else {
         addToast('KIT CRIADO COM SUCESSO', 'success');
@@ -119,9 +114,6 @@ export function AddToKitModal({ isOpen, onClose, userId, macroId, macroKits }: P
 
     setNewKitName('');
     setLoading(false);
-    
-    // Garante sincronia final com o banco
-    setTimeout(() => fetchKits(), 500); 
   };
 
   if (!isOpen) return null;
@@ -129,39 +121,72 @@ export function AddToKitModal({ isOpen, onClose, userId, macroId, macroKits }: P
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)', backgroundColor: 'rgba(0, 0, 0, 0.8)' }}>
       
+      {/* ESTILOS LOCAIS DE ALTO CONTRASTE */}
       <style>{`
+        /* Item da Lista (Compacto e com Borda Lateral) */
         .kit-item {
           display: flex; justify-content: space-between; alignItems: center;
-          padding: 10px 15px; border: 1px solid #222; background: #080808;
-          margin-bottom: 8px; border-radius: 2px; transition: all 0.2s;
+          padding: 8px 12px; /* Mais compacto */
+          background: #000;
+          border: 1px solid #333;
+          border-left: 3px solid #444; /* Borda padrão */
+          margin-bottom: 6px; 
+          border-radius: 2px; 
+          transition: all 0.2s;
         }
-        .kit-item:hover { border-color: #444; background: #111; }
+        /* Hover do Item: A borda lateral acende */
+        .kit-item:hover { 
+          border-color: #555; 
+          border-left-color: var(--neon-cyan);
+          box-shadow: 0 0 15px rgba(0,0,0,0.5);
+        }
         
-        .kit-name-group { display: flex; align-items: center; gap: 10px; color: #fff; font-family: 'JetBrains Mono'; font-size: 0.9rem; }
+        .kit-name-group { display: flex; align-items: center; gap: 10px; color: #ccc; font-family: 'JetBrains Mono'; font-size: 0.85rem; }
         
+        /* Botão Toggle */
         .btn-toggle-kit {
-          background: transparent; border: 1px solid; padding: 4px 10px;
-          font-size: 0.7rem; font-weight: bold; font-family: 'JetBrains Mono';
-          cursor: pointer; transition: all 0.2s; border-radius: 2px; min-width: 80px; text-align: center;
+          background: transparent; border: 1px solid; padding: 4px 8px;
+          font-size: 0.65rem; font-weight: bold; font-family: 'JetBrains Mono';
+          cursor: pointer; transition: all 0.2s; border-radius: 2px; min-width: 70px; text-align: center;
+          text-transform: uppercase;
         }
         
-        .status-add { border-color: var(--neon-cyan); color: var(--neon-cyan); }
-        .status-add:hover { background: var(--neon-cyan); color: #000; box-shadow: 0 0 10px var(--neon-cyan); }
+        /* Estado: ADD (Outline Cyan) */
+        .status-add { border-color: #444; color: #666; }
+        .kit-item:hover .status-add { border-color: var(--neon-cyan); color: var(--neon-cyan); }
+        .status-add:hover { background: var(--neon-cyan); color: #000 !important; box-shadow: 0 0 10px var(--neon-cyan); }
         
-        .status-added { border-color: var(--neon-green); background: rgba(0,255,0,0.1); color: var(--neon-green); }
-        .status-added:hover { background: var(--neon-green); color: #000; box-shadow: 0 0 10px var(--neon-green); }
+        /* Estado: ADDED (Solid Green) */
+        .status-added { 
+          border-color: var(--neon-green); 
+          background: rgba(0, 255, 0, 0.1); 
+          color: var(--neon-green); 
+          box-shadow: 0 0 5px rgba(0, 255, 0, 0.2);
+        }
+        .status-added:hover { background: var(--neon-green); color: #000 !important; box-shadow: 0 0 15px var(--neon-green); }
 
+        /* Botão CRIAR (Rosa Sólido e Visível) */
         .btn-create-kit-action {
-          background: var(--neon-pink); color: #000; border: none;
-          font-weight: 900; font-family: 'JetBrains Mono'; padding: 0 1.5rem;
-          cursor: pointer; transition: all 0.2s;
+          background: var(--neon-pink); 
+          color: #000; 
+          border: none;
+          font-weight: 900; 
+          font-family: 'JetBrains Mono'; 
+          padding: 0 1.5rem;
+          height: 100%;
+          cursor: pointer; 
+          transition: all 0.2s;
+          text-transform: uppercase;
+          letter-spacing: 1px;
         }
-        .btn-create-kit-action:hover { background: #fff; box-shadow: 0 0 15px var(--neon-pink); }
-        .btn-create-kit-action:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-create-kit-action:hover { background: #fff; box-shadow: 0 0 15px var(--neon-pink); transform: translateY(-1px); }
+        .btn-create-kit-action:disabled { opacity: 0.5; cursor: not-allowed; background: #333; color: #666; }
+
       `}</style>
 
       <div className="cyber-modal" style={{ width: '90%', maxWidth: '500px', display: 'flex', flexDirection: 'column' }}>
         
+        {/* HEADER */}
         <div className="modal-header">
           <div>
             <span style={{ fontSize: '0.65rem', color: 'var(--neon-purple)', fontFamily: 'JetBrains Mono', display: 'block', marginBottom: '4px', letterSpacing:'1px' }}>SYSTEM: ORGANIZE</span>
@@ -170,22 +195,29 @@ export function AddToKitModal({ isOpen, onClose, userId, macroId, macroKits }: P
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer', fontSize: '1.2rem' }}>✕</button>
         </div>
 
-        <div className="modal-body" style={{ maxHeight: '300px', paddingBottom: '0' }}>
+        {/* LISTA DE KITS (COM SCROLL) */}
+        <div className="modal-body" style={{ maxHeight: '350px', paddingBottom: '0', overflowY: 'auto' }}>
           {kits.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '2rem', color: '#666', fontFamily: 'JetBrains Mono', fontSize: '0.8rem' }}>
-              NO_KITS_FOUND // CREATE ONE BELOW
+            <div style={{ textAlign: 'center', padding: '2rem', color: '#444', fontFamily: 'JetBrains Mono', fontSize: '0.8rem', border: '1px dashed #333' }}>
+              [ EMPTY DATABASE ]<br/>CREATE YOUR FIRST KIT BELOW
             </div>
           ) : (
             kits.map(kit => {
               const isAdded = localMacroKits.has(kit.id);
               return (
-                <div key={kit.id} className="kit-item">
+                <div key={kit.id} className="kit-item" style={isAdded ? { borderLeftColor: 'var(--neon-green)', borderColor: 'rgba(0,255,0,0.2)' } : {}}>
                   <div className="kit-name-group">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
-                    {kit.name}
+                    {/* Ícone de Pasta (SVG) */}
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={isAdded ? "var(--neon-green)" : "#f59e0b"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                    <span style={isAdded ? { color: '#fff', fontWeight: 'bold' } : {}}>{kit.name}</span>
                   </div>
-                  <button onClick={() => toggleKit(kit.id)} className={`btn-toggle-kit ${isAdded ? 'status-added' : 'status-add'}`}>
-                    {isAdded ? '[ ADDED ]' : '[ ADD + ]'}
+                  <button 
+                    onClick={() => toggleKit(kit.id)} 
+                    className={`btn-toggle-kit ${isAdded ? 'status-added' : 'status-add'}`}
+                  >
+                    {isAdded ? 'SAVED' : 'ADD +'}
                   </button>
                 </div>
               )
@@ -193,20 +225,23 @@ export function AddToKitModal({ isOpen, onClose, userId, macroId, macroKits }: P
           )}
         </div>
 
-        <div style={{ padding: '1.5rem', borderTop: '1px solid #222', marginTop: 'auto', background: '#080808' }}>
+        {/* FOOTER: CRIAR NOVO (FIXADO EMBAIXO) */}
+        <div style={{ padding: '1.5rem', borderTop: '1px solid #222', marginTop: 'auto', background: '#050505' }}>
           <label className="input-label">CREATE_NEW_COLLECTION</label>
-          <div style={{ display: 'flex', gap: '10px' }}>
+          <div style={{ display: 'flex', gap: '0', height: '40px' }}>
             <input 
               className="cyber-field" 
-              placeholder="NOME DO KIT..." 
+              placeholder="NOME DO NOVO KIT..." 
               value={newKitName} 
               onChange={e => setNewKitName(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleCreateKit()}
+              style={{ borderRight: 'none', borderTopRightRadius: 0, borderBottomRightRadius: 0 }}
             />
             <button 
               onClick={handleCreateKit} 
               disabled={loading || !newKitName.trim()}
               className="btn-create-kit-action"
+              style={{ borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }}
             >
               {loading ? '...' : 'CREATE'}
             </button>
