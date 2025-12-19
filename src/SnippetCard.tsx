@@ -288,7 +288,9 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
         <span style={{ fontFamily: 'monospace', fontSize: '0.7rem', color: '#666' }}>{formattedDate}</span>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <button onClick={() => onAddToKit(snippet.id)} className={`cyber-action-btn btn-kit ${isInKit ? 'active' : ''}`} title={isInKit ? "Gerenciar Kits" : "Adicionar a um Kit"}>
-            <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+            <svg viewBox="0 0 24 24" style={{ fill: isInKit ? 'currentColor' : 'none' }}            >
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+            </svg>
             {isInKit ? 'SAVED' : 'KIT'}
           </button>
           {!isOwner && (
