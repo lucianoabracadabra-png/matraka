@@ -24,6 +24,7 @@ export function AddToKitModal({ isOpen, onClose, userId, macroId, macroKits }: P
   // Estado local para controle visual instantâneo
   const [localMacroKits, setLocalMacroKits] = useState<Set<string>>(new Set(macroKits));
 
+  // Carrega os kits apenas quando o modal abre
   useEffect(() => {
     if (isOpen && userId) {
       fetchKits();
@@ -39,10 +40,10 @@ export function AddToKitModal({ isOpen, onClose, userId, macroId, macroKits }: P
   const toggleKit = async (kitId: string) => {
     if (!macroId) return;
     
-    // LÓGICA OTIMISTA: Atualiza visualmente ANTES do banco
+    // VERIFICAÇÃO OTIMISTA: Atualiza a interface IMEDIATAMENTE
     const isCurrentlyAdded = localMacroKits.has(kitId);
     
-    // Atualiza estado local imediatamente
+    // Atualiza estado local instantaneamente (dá a sensação de rapidez)
     setLocalMacroKits(prev => {
       const next = new Set(prev);
       if (isCurrentlyAdded) next.delete(kitId);
@@ -51,21 +52,19 @@ export function AddToKitModal({ isOpen, onClose, userId, macroId, macroKits }: P
     });
 
     if (isCurrentlyAdded) {
-      // Remover do Banco
+      // Tenta Remover do Banco
       const { error } = await supabase.from('kit_items').delete().eq('kit_id', kitId).eq('macro_id', macroId);
       if (error) {
+        // Se der erro, reverte a mudança visual
         addToast('ERRO AO REMOVER', 'error');
-        // Reverte em caso de erro
         setLocalMacroKits(prev => { const n = new Set(prev); n.add(kitId); return n; });
-      } else {
-        // addToast('REMOVIDO', 'info'); // Opcional: Feedback silencioso é melhor aqui
       }
     } else {
-      // Adicionar ao Banco
+      // Tenta Adicionar ao Banco
       const { error } = await supabase.from('kit_items').insert({ kit_id: kitId, macro_id: macroId });
       if (error) {
+        // Se der erro, reverte a mudança visual
         addToast('ERRO AO ADICIONAR', 'error');
-        // Reverte em caso de erro
         setLocalMacroKits(prev => { const n = new Set(prev); n.delete(kitId); return n; });
       } else {
         addToast('SALVO NO KIT', 'success');
@@ -77,7 +76,7 @@ export function AddToKitModal({ isOpen, onClose, userId, macroId, macroKits }: P
     if (!newKitName.trim()) return;
     setLoading(true);
 
-    // 1. Cria o Kit
+    // 1. Cria o Kit no Banco
     const { data: newKit, error: createError } = await supabase
       .from('kits')
       .insert({ name: newKitName, user_id: userId })
@@ -91,10 +90,11 @@ export function AddToKitModal({ isOpen, onClose, userId, macroId, macroKits }: P
     }
 
     if (newKit) {
-      // Adiciona na lista visualmente agora
-      setKits(prev => [...prev, newKit]);
+      // SUCESSO: Atualiza a lista visualmente AGORA (sem esperar fetch)
+      // Usamos uma função de callback para garantir que estamos usando o estado mais recente
+      setKits(currentKits => [...currentKits, newKit]);
       
-      // 2. Se tem macro, vincula automaticamente
+      // 2. Se tem uma macro aberta, vincula ela automaticamente ao novo kit
       if (macroId) {
         const { error: linkError } = await supabase
           .from('kit_items')
@@ -103,8 +103,12 @@ export function AddToKitModal({ isOpen, onClose, userId, macroId, macroKits }: P
         if (linkError) {
           addToast('KIT CRIADO (ERRO AO VINCULAR)', 'error');
         } else {
-          // Marca como adicionado visualmente
-          setLocalMacroKits(prev => { const n = new Set(prev); n.add(newKit.id); return n; });
+          // MARCA COMO VERDE IMEDIATAMENTE NA LISTA
+          setLocalMacroKits(prev => { 
+            const next = new Set(prev); 
+            next.add(newKit.id); 
+            return next; 
+          });
           addToast('KIT CRIADO & VINCULADO!', 'success');
         }
       } else {
@@ -114,6 +118,8 @@ export function AddToKitModal({ isOpen, onClose, userId, macroId, macroKits }: P
 
     setNewKitName('');
     setLoading(false);
+    // NÃO chamamos fetchKits() aqui para evitar que a latência do banco 
+    // sobrescreva nossa atualização otimista. Confiamos no que acabamos de criar.
   };
 
   if (!isOpen) return null;
@@ -126,7 +132,7 @@ export function AddToKitModal({ isOpen, onClose, userId, macroId, macroKits }: P
         /* Item da Lista (Compacto e com Borda Lateral) */
         .kit-item {
           display: flex; justify-content: space-between; alignItems: center;
-          padding: 8px 12px; /* Mais compacto */
+          padding: 8px 12px;
           background: #000;
           border: 1px solid #333;
           border-left: 3px solid #444; /* Borda padrão */
@@ -134,7 +140,7 @@ export function AddToKitModal({ isOpen, onClose, userId, macroId, macroKits }: P
           border-radius: 2px; 
           transition: all 0.2s;
         }
-        /* Hover do Item: A borda lateral acende */
+        /* Hover do Item */
         .kit-item:hover { 
           border-color: #555; 
           border-left-color: var(--neon-cyan);
