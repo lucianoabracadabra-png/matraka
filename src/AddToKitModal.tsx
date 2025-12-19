@@ -22,14 +22,22 @@ export function AddToKitModal({ isOpen, onClose, userId, macroId, macroKits }: P
   const [loading, setLoading] = useState(false);
   
   // ESTADO VISUAL: A verdade absoluta enquanto o modal está aberto
-  const [localMacroKits, setLocalMacroKits] = useState<Set<string>>(new Set(macroKits));
+  const [localMacroKits, setLocalMacroKits] = useState<Set<string>>(new Set());
 
+  // EFEITO 1: Carregar a lista de kits (pastas) apenas ao abrir
   useEffect(() => {
     if (isOpen && userId) {
       fetchKits();
+    }
+  }, [isOpen, userId]);
+
+  // EFEITO 2: Sincronizar o estado visual APENAS quando muda a Macro ou abre o modal
+  // Removemos 'macroKits' das dependências diretas para evitar o "Flash" de reset
+  useEffect(() => {
+    if (isOpen && macroId) {
       setLocalMacroKits(new Set(macroKits));
     }
-  }, [isOpen, userId, macroKits]);
+  }, [macroId, isOpen]); 
 
   const fetchKits = async () => {
     const { data } = await supabase.from('kits').select('*').eq('user_id', userId).order('created_at');
@@ -51,14 +59,27 @@ export function AddToKitModal({ isOpen, onClose, userId, macroId, macroKits }: P
     });
 
     // 2. DISPARA PARA O BANCO (Background)
-    // Não usamos await para travar a UI, nem mostramos erro se falhar silenciosamente
     if (isCurrentlyAdded) {
-      // Estava marcado, então removemos
-      supabase.from('kit_items').delete().eq('kit_id', kitId).eq('macro_id', macroId).then();
+      // Remover
+      supabase.from('kit_items').delete().eq('kit_id', kitId).eq('macro_id', macroId)
+        .then(({ error }) => {
+          if (error) { 
+            // Se der erro real, aí sim revertemos
+            addToast('ERRO AO SALVAR', 'error');
+            setLocalMacroKits(prev => { const n = new Set(prev); n.add(kitId); return n; });
+          }
+        });
     } else {
-      // Não estava, adicionamos
-      supabase.from('kit_items').insert({ kit_id: kitId, macro_id: macroId }).then();
-      addToast('SALVO NO KIT', 'success');
+      // Adicionar
+      supabase.from('kit_items').insert({ kit_id: kitId, macro_id: macroId })
+        .then(({ error }) => {
+          if (error) {
+            addToast('ERRO AO SALVAR', 'error');
+            setLocalMacroKits(prev => { const n = new Set(prev); n.delete(kitId); return n; });
+          } else {
+            addToast('SALVO NO KIT', 'success');
+          }
+        });
     }
   };
 
@@ -68,7 +89,7 @@ export function AddToKitModal({ isOpen, onClose, userId, macroId, macroKits }: P
     setLoading(true);
 
     try {
-      // 1. Criar o Kit (Precisamos esperar o ID, isso é rápido)
+      // 1. Criar o Kit
       const { data: newKit, error: createError } = await supabase
         .from('kits')
         .insert({ name: newKitName, user_id: userId })
@@ -79,20 +100,28 @@ export function AddToKitModal({ isOpen, onClose, userId, macroId, macroKits }: P
 
       // 2. ATUALIZAÇÃO VISUAL IMEDIATA DA LISTA
       setKits(prev => [...prev, newKit]);
-      setNewKitName(''); // Limpa input
+      setNewKitName(''); 
 
       // 3. SE TEM MACRO, MARCA COMO VINCULADO VISUALMENTE AGORA
       if (macroId) {
+        // Marca visualmente ANTES de ir pro banco
         setLocalMacroKits(prev => {
           const next = new Set(prev);
-          next.add(newKit.id); // Pinta de verde instantaneamente
+          next.add(newKit.id); 
           return next;
         });
 
         // 4. ENVIA O VÍNCULO PARA O BANCO (Background)
-        supabase.from('kit_items').insert({ kit_id: newKit.id, macro_id: macroId }).then();
-        
-        addToast('KIT CRIADO E VINCULADO!', 'success');
+        supabase.from('kit_items').insert({ kit_id: newKit.id, macro_id: macroId })
+          .then(({ error }) => {
+            if(error) {
+               addToast('ERRO AO VINCULAR', 'error');
+               // Reverte visualmente se falhar
+               setLocalMacroKits(prev => { const n = new Set(prev); n.delete(newKit.id); return n; });
+            } else {
+               addToast('KIT CRIADO E VINCULADO!', 'success');
+            }
+          });
       } else {
         addToast('KIT CRIADO COM SUCESSO', 'success');
       }
