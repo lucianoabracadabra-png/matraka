@@ -90,7 +90,8 @@ export function AddToKitModal({ isOpen, onClose, userId, macroId, macroKits }: P
         .insert({ kit_id: newKit.id, macro_id: macroId });
 
       if (linkError) {
-        addToast('KIT CRIADO, MAS FALHA AO LINKAR', 'warning');
+        // CORREÇÃO AQUI: Mudado de 'warning' para 'error'
+        addToast('KIT CRIADO, MAS FALHA AO LINKAR', 'error');
       } else {
         addToast('KIT CRIADO & MACRO SALVA!', 'success');
         // Atualiza estado local para refletir a mudança
