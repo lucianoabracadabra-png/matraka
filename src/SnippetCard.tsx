@@ -166,7 +166,7 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
         .snippet-card {
           background: rgba(20, 20, 25, 0.6); /* Translúcido */
           border: 1px solid rgba(255, 255, 255, 0.1);
-          backdrop-filter: blur(10px);
+          backdrop-filter: blur(3px);
           box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
           border-radius: 4px;
           position: relative;
