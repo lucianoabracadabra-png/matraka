@@ -22,6 +22,7 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
   const [isLikeLoading, setIsLikeLoading] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
 
+  // --- ADMIN LIST ---
   const ADMIN_IDS = ['8c0bdcd1-336a-4de9-bd64-7d87f1ee36f2', 'b3545b7e-8819-4728-a1ec-f991e1fd732d', 'b6b523ce-569a-4110-9906-8f04127a89a8'];
   const isAdmin = ADMIN_IDS.includes(snippet.user_id);
 
@@ -32,6 +33,7 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
     }
   }, [deleteConfirm]);
 
+  // --- ACTIONS ---
   const handleCopy = () => {
     const textToCopy = snippet.text || '';
     const regex = /\[input:([^\]]+)\]/gi;
@@ -95,6 +97,7 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
     else { addToast('MACRO DELETADA', 'info'); onDelete(); }
   };
 
+  // --- FORMAT DATE ---
   let formattedDate = '...'; 
   if (snippet.created_at) {
     try {
@@ -108,9 +111,14 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
   const appType = (snippet.app || 'TEXT').toUpperCase();
   const cardClass = appType === 'AI' ? 'card-ai' : 'card-text';
   const isOwner = snippet.user_id === userId;
+  
+  // Cor Principal baseada no tipo (usada para o atalho)
+  const mainColor = appType === 'AI' ? 'var(--neon-pink)' : 'var(--neon-cyan)';
 
+  // --- RENDERIZADOR DE TAGS ---
   const renderMessageContent = (text: string) => {
     const parts = text.split(/(\[.*?\]|\{.*?\})/g);
+
     return parts.map((part, index) => {
       if (part.match(/^\[input:/i)) {
         const label = part.replace(/^\[input:|\]$/gi, '');
@@ -153,7 +161,7 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
     <div className={`snippet-card ${cardClass}`} style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       
       <style>{`
-        /* Glassmorphism Card */
+        /* Glassmorphism Card Base */
         .snippet-card {
           background: rgba(20, 20, 25, 0.6);
           border: 1px solid rgba(255, 255, 255, 0.1);
@@ -165,13 +173,23 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
           transition: all 0.2s ease;
         }
         
+        /* BARRAS LATERAIS */
         .card-text { border-left: 3px solid var(--neon-cyan) !important; }
         .card-ai { border-left: 3px solid var(--neon-pink) !important; }
 
-        .card-text:hover { box-shadow: 0 0 15px rgba(0, 243, 255, 0.1); border-color: rgba(0, 243, 255, 0.3); }
-        .card-ai:hover { box-shadow: 0 0 15px rgba(255, 0, 255, 0.1); border-color: rgba(255, 0, 255, 0.3); }
+        /* HOVER: BORDA DE 1PX NA COR DO TEMA */
+        .card-text:hover { 
+          border: 1px solid var(--neon-cyan);
+          border-left: 3px solid var(--neon-cyan) !important;
+          box-shadow: 0 0 15px rgba(0, 243, 255, 0.1);
+        }
+        .card-ai:hover { 
+          border: 1px solid var(--neon-pink);
+          border-left: 3px solid var(--neon-pink) !important;
+          box-shadow: 0 0 15px rgba(255, 0, 255, 0.1);
+        }
 
-        /* --- BOTÕES DE AÇÃO --- */
+        /* --- BOTÕES --- */
         .cyber-action-btn {
           display: flex; align-items: center; gap: 6px;
           padding: 6px 10px; border-radius: 2px;
@@ -181,57 +199,57 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
           border: 1px solid #333; 
           color: #888;
         }
-        .cyber-action-btn svg {
-          width: 14px; height: 14px; fill: none; 
-          stroke: currentColor; stroke-width: 2; 
-          stroke-linecap: round; stroke-linejoin: round;
-        }
+        .cyber-action-btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
-        /* KIT (Verde) */
-        .btn-kit { border-color: #00ff00; color: #00ff00; }
-        /* Active: Fundo preenchido, Texto Preto */
-        .btn-kit.active { background: #00ff00; color: #000; border-color: #00ff00; }
-        /* Hover: Fundo preenchido + Glow, Texto Preto */
-        .btn-kit:hover { background: #00ff00; color: #000; box-shadow: 0 0 15px #00ff00; }
+        /* CORES DE HOVER E ACTIVE */
+        .btn-neon-kit:hover, .btn-neon-kit.active { border-color: #00ff00; background: #00ff00; color: #000; box-shadow: 0 0 10px rgba(0, 255, 0, 0.5); }
+        .btn-neon-copy:hover { border-color: var(--neon-cyan); background: var(--neon-cyan); color: #000; box-shadow: 0 0 10px rgba(0, 243, 255, 0.5); }
+        .btn-neon-like:hover, .btn-neon-like.active { border-color: var(--neon-pink); background: var(--neon-pink); color: #000; box-shadow: 0 0 10px rgba(255, 0, 255, 0.5); }
+        .btn-neon-edit:hover { border-color: #ffff00; background: #ffff00; color: #000; box-shadow: 0 0 10px rgba(255, 255, 0, 0.5); }
 
-        /* COPY (Ciano) */
-        .btn-copy { border-color: var(--neon-cyan); color: var(--neon-cyan); }
-        .btn-copy:hover { background: var(--neon-cyan); color: #000; box-shadow: 0 0 15px var(--neon-cyan); }
-
-        /* LIKE (Rosa) */
-        .btn-like { border-color: var(--neon-pink); color: var(--neon-pink); }
-        .btn-like.active { background: var(--neon-pink); color: #000; border-color: var(--neon-pink); }
-        .btn-like:hover { background: var(--neon-pink); color: #000; box-shadow: 0 0 15px var(--neon-pink); }
-
-        /* EDIT (Amarelo) */
-        .btn-edit { border-color: #ffff00; color: #ffff00; }
-        .btn-edit:hover { background: #ffff00; color: #000; box-shadow: 0 0 15px #ffff00; }
-
-        /* DELETE (Rosa - Estilo X) */
-        .btn-delete { 
+        /* DELETE BUTTON (RED) */
+        .btn-delete-neon { 
           border-radius: 2px; padding: 6px 10px; font-size: 0.75rem; 
           font-family: 'JetBrains Mono'; cursor: pointer; font-weight: bold; 
-          background: rgba(0,0,0,0.3); color: #666; border: 1px solid rgba(255,255,255,0.1); 
+          background: rgba(0,0,0,0.3); 
+          color: #ff2a2a; border: 1px solid #ff2a2a; /* Default Red */
           display: flex; align-items: center; justifyContent: center; min-width: 32px; transition: all 0.2s; 
         }
-        .btn-delete:hover { 
-          background: var(--neon-pink); color: #000; 
-          border-color: var(--neon-pink); box-shadow: 0 0 15px var(--neon-pink); 
+        /* Hover: Fundo Vermelho, Texto Preto, Glow Vermelho */
+        .btn-delete-neon:hover { 
+          background: #ff2a2a; 
+          color: #000 !important; 
+          box-shadow: 0 0 15px #ff2a2a; 
         }
 
-        /* Badge/Tag */
+        /* Tag Badge */
         .tag-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 2px; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; font-weight: bold; background: rgba(0,0,0,0.4); border: 1px solid; margin: 0 2px; vertical-align: middle; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
-        .tag-badge svg { width: 10px; height: 10px; stroke-width: 2.5; }
         
-        /* Bubble */
+        /* Chat Bubble */
         .chat-bubble { background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.05); padding: 10px; margin-bottom: 8px; font-family: monospace; font-size: 0.85rem; color: #ddd; border-radius: 4px; position: relative; }
       `}</style>
 
+      {/* HEADER */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
         <h3 className="snippet-name" style={{ margin: 0, color: '#fff', textTransform:'uppercase', letterSpacing:'1px', textShadow: '0 0 10px rgba(0,0,0,0.5)' }}>{snippet.name}</h3>
-        {snippet.shortcut && <span className="snippet-shortcut" style={{background:'rgba(0,0,0,0.5)', border:'1px solid rgba(255,255,255,0.2)', color:'#aaa', borderRadius:'2px'}}>{snippet.shortcut}</span>}
+        {/* ATALHO COM A COR CORRETA */}
+        {snippet.shortcut && (
+          <span className="snippet-shortcut" style={{
+            background: 'rgba(0,0,0,0.6)', 
+            border: `1px solid ${mainColor}`, 
+            color: mainColor, 
+            borderRadius: '2px', 
+            fontSize: '0.75rem',
+            padding: '2px 6px', 
+            fontWeight: 'bold',
+            boxShadow: `0 0 5px ${mainColor}20`
+          }}>
+            {snippet.shortcut}
+          </span>
+        )}
       </div>
 
+      {/* BADGES SUPERIORES */}
       <div style={{ marginBottom: '0.5rem', display:'flex', gap:'8px', alignItems:'center' }}>
         <span style={{ fontSize: '0.7rem', fontWeight: 'bold', padding: '2px 6px', borderRadius:'2px', background: 'rgba(0,0,0,0.3)', color: appType === 'AI' ? '#a855f7' : 'var(--neon-cyan)', border: `1px solid ${appType === 'AI' ? '#a855f7' : 'var(--neon-cyan)'}` }}>
           {appType === 'AI' ? 'AI' : 'TXT'}
@@ -248,6 +266,7 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
         {isAdmin && <span style={{ border: '1px solid #ffd700', color: '#ffd700', background: 'rgba(255, 215, 0, 0.1)', padding: '2px 6px', fontSize: '0.65rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '3px' }}><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg> OFICIAL</span>}
       </div>
 
+      {/* CONTEÚDO (CHAT) */}
       <div className="snippet-content" style={{ flex: 1, marginBottom: '1rem', cursor: 'pointer' }} onClick={handleCopy} title="Clique para copiar">
         <div className="chat-container">
           {chatBubbles.map((msg: string, idx: number) => {
@@ -271,29 +290,30 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
         <div style={{ textAlign: 'center', marginTop: '0.5rem', opacity: 0.5, fontSize: '0.7rem', color: 'var(--neon-cyan)' }}>[ CLIQUE PARA COPIAR ]</div>
       </div>
 
+      {/* FOOTER */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.1)', marginTop: 'auto' }}>
         <span style={{ fontFamily: 'monospace', fontSize: '0.7rem', color: '#666' }}>{formattedDate}</span>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button onClick={() => onAddToKit(snippet.id)} className={`cyber-action-btn btn-kit ${isInKit ? 'active' : ''}`} title={isInKit ? "Gerenciar Kits" : "Adicionar a um Kit"}>
+          <button onClick={() => onAddToKit(snippet.id)} className={`cyber-action-btn btn-neon-kit ${isInKit ? 'active' : ''}`} title={isInKit ? "Gerenciar Kits" : "Adicionar a um Kit"}>
             <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
             {isInKit ? 'SAVED' : 'KIT'}
           </button>
           {!isOwner && (
-            <button onClick={handleClone} disabled={isCloning} className="cyber-action-btn btn-copy" title="Copiar Macro">
+            <button onClick={handleClone} disabled={isCloning} className="cyber-action-btn btn-neon-copy" title="Copiar Macro">
               <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2-2v1"></path></svg>
               {isCloning ? '...' : 'COPY'}
             </button>
           )}
-          <button onClick={handleToggleLike} className={`cyber-action-btn btn-like ${isLiked ? 'active' : ''}`}>
+          <button onClick={handleToggleLike} className={`cyber-action-btn btn-neon-like ${isLiked ? 'active' : ''}`}>
             <svg viewBox="0 0 24 24" style={{fill: isLiked ? 'currentColor' : 'none'}}><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
             {likesCount}
           </button>
           {isOwner && (
             <>
-              <button onClick={() => onEdit(snippet)} className="cyber-action-btn btn-edit" title="Editar">
+              <button onClick={() => onEdit(snippet)} className="cyber-action-btn btn-neon-edit" title="Editar">
                 <svg viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
               </button>
-              <button onClick={handleDeleteClick} className="cyber-action-btn btn-delete" title="Deletar">
+              <button onClick={handleDeleteClick} className="btn-delete-neon" title="Deletar">
                 {deleteConfirm ? 'CONFIRM?' : '✕'}
               </button>
             </>
