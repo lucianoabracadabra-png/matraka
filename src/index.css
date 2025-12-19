@@ -356,3 +356,96 @@ body {
 ::-webkit-scrollbar-track { background: #000; }
 ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--neon-cyan); }
+
+/* --- KITS BAR (Barra de Seleção de Kits) --- */
+.kits-container {
+  display: flex; 
+  gap: 0.8rem; 
+  padding: 1rem 0; 
+  overflow-x: auto; 
+  border-bottom: 1px solid #222;
+  margin-bottom: 1rem;
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Botão "+ NEW KIT" (Estilo Sólido Rosa) */
+.btn-add-kit {
+  background: var(--neon-pink);
+  color: #000;
+  border: none;
+  border-radius: 2px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-weight: 900;
+  font-size: 0.8rem;
+  font-family: 'JetBrains Mono';
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: all 0.2s;
+  box-shadow: 0 0 10px rgba(255, 0, 255, 0.3);
+  white-space: nowrap;
+}
+.btn-add-kit:hover {
+  background: #fff;
+  box-shadow: 0 0 20px var(--neon-pink);
+  transform: translateY(-1px);
+}
+
+/* Botão de Kit Individual (Estilo Outline -> Glow) */
+.kit-tab {
+  display: flex;
+  align-items: center;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid #333;
+  border-radius: 2px;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.kit-tab-name {
+  background: transparent;
+  border: none;
+  color: #888;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8rem;
+  font-weight: normal;
+  transition: all 0.2s;
+}
+
+/* Hover do Kit */
+.kit-tab:hover {
+  border-color: var(--neon-cyan);
+  box-shadow: 0 0 15px rgba(0, 243, 255, 0.15);
+}
+.kit-tab:hover .kit-tab-name { color: var(--neon-cyan); }
+
+/* Estado Ativo (Selecionado) */
+.kit-tab.active {
+  background: rgba(0, 243, 255, 0.05);
+  border-color: var(--neon-cyan);
+  box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
+}
+.kit-tab.active .kit-tab-name {
+  color: var(--neon-cyan);
+  font-weight: bold;
+}
+
+/* Botão de Deletar Kit (Pequeno X) */
+.btn-delete-kit {
+  background: transparent;
+  border: none;
+  border-left: 1px solid #333;
+  color: #666;
+  cursor: pointer;
+  padding: 8px 10px;
+  font-size: 10px;
+  transition: all 0.2s;
+  display: flex; align-items: center; height: 100%;
+}
+.btn-delete-kit:hover {
+  color: var(--neon-red);
+  background: rgba(255, 42, 42, 0.1);
+  border-left-color: var(--neon-red);
+}

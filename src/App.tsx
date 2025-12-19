@@ -196,7 +196,6 @@ function App() {
           <div className="header-top" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
             <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
               
-              {/* LOGO */}
               <div style={{ width: '64px', height: '64px', background: 'rgba(5, 5, 10, 0.8)', border: '1px solid var(--neon-cyan)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 20px rgba(0, 243, 255, 0.2)', transform: 'skewX(-10deg)', position: 'relative', flexShrink: 0 }}>
                 <div style={{ position: 'absolute', top: '-1px', right: '-1px', width: '10px', height: '10px', background: 'var(--neon-pink)', clipPath: 'polygon(0 0, 100% 0, 100% 100%)' }}></div>
                 <svg width="42" height="42" viewBox="0 0 100 100" fill="none" strokeWidth="2" style={{ transform: 'skewX(10deg)' }}>
@@ -227,7 +226,7 @@ function App() {
                       <span style={{fontSize:'0.8rem', opacity: 0.5}}>✎</span>
                     </button>
 
-                    {/* BOTÃO LOGOUT ATUALIZADO */}
+                    {/* NOVO BOTÃO LOGOUT USANDO CLASSE CSS */}
                     <button onClick={handleLogout} className="btn-logout">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
                       LOGOUT
@@ -260,17 +259,26 @@ function App() {
             </div>
           </div>
 
+          {/* BARRA DE KITS ATUALIZADA (SEM EMOJI NA PASTA, USANDO CLASSES) */}
           {activeTab === 'KITS' && (
-              <div style={{ display: 'flex', gap: '0.8rem', padding: '1rem 0', overflowX: 'auto', borderBottom: '1px solid #222', animation: 'fadeIn 0.3s' }}>
-                  <button onClick={() => setIsAddToKitOpen(true)} style={{ background: 'var(--neon-pink)', color: '#000', border: 'none', borderRadius: '2px', padding: '6px 12px', cursor: 'pointer', fontWeight:'bold', fontSize:'0.8rem', fontFamily: 'JetBrains Mono' }}>+ NEW KIT</button>
-                  {myKits.map(kit => (
-                      <div key={kit.id} style={{display:'flex', alignItems:'center', background: selectedKitId === kit.id ? '#000' : 'rgba(255,255,255,0.05)', borderRadius:'2px', border: selectedKitId === kit.id ? '1px solid var(--neon-cyan)' : '1px solid #444', boxShadow: selectedKitId === kit.id ? '0 0 10px rgba(0,243,255,0.2)' : 'none'}}>
-                          <button onClick={() => setSelectedKitId(kit.id)} style={{ background: 'transparent', border: 'none', color: selectedKitId === kit.id ? 'var(--neon-cyan)':'#fff', padding: '6px 12px', cursor: 'pointer', fontFamily: 'JetBrains Mono', fontSize: '0.8rem', fontWeight: selectedKitId === kit.id ? 'bold':'normal' }}>
-                              📁 {kit.name} <span style={{opacity:0.5}}>({kitItems[kit.id]?.size || 0})</span>
+              <div className="kits-container">
+                  <button onClick={() => setIsAddToKitOpen(true)} className="btn-add-kit">
+                    + NEW KIT
+                  </button>
+                  
+                  {myKits.map(kit => {
+                    const isActive = selectedKitId === kit.id;
+                    return (
+                      <div key={kit.id} className={`kit-tab ${isActive ? 'active' : ''}`}>
+                          <button onClick={() => setSelectedKitId(kit.id)} className="kit-tab-name">
+                              {kit.name} <span style={{opacity:0.5}}>({kitItems[kit.id]?.size || 0})</span>
                           </button>
-                          <button onClick={() => handleDeleteKit(kit.id, kit.name)} style={{ background:'transparent', border:'none', color:'#666', cursor:'pointer', padding:'0 8px', fontSize:'10px' }} title="Delete Kit">✕</button>
+                          <button onClick={() => handleDeleteKit(kit.id, kit.name)} className="btn-delete-kit" title="Delete Kit">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                          </button>
                       </div>
-                  ))}
+                    );
+                  })}
               </div>
           )}
         </div>
