@@ -59,10 +59,7 @@ export function CreateMacroModal({ isOpen, onClose, onSuccess, userId, macroToEd
   };
 
   const handleSave = async () => {
-    if (!title || !content) {
-      addToast('DADOS INCOMPLETOS', 'error');
-      return;
-    }
+    if (!title || !content) { addToast('DADOS INCOMPLETOS', 'error'); return; }
     setLoading(true);
     let error;
     const macroType = appCategory === 'AI' ? 'ai' : 'text';
@@ -84,53 +81,11 @@ export function CreateMacroModal({ isOpen, onClose, onSuccess, userId, macroToEd
     <div style={{ position: 'fixed', inset: 0, zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)', backgroundColor: 'rgba(0, 0, 0, 0.8)' }}>
       <div className="cyber-modal" style={{ width: '90%', maxWidth: '700px', padding: '0', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         
-        {/* CSS LOCAL FIXADO */}
-        <style>{`
-          .input-label { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: #666; margin-bottom: 6px; display: block; letter-spacing: 1px; }
-          .cyber-field { background: #050505; border: 1px solid #333; color: #fff; padding: 12px; font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; width: 100%; border-radius: 2px; transition: all 0.2s; }
-          .cyber-field:focus { border-color: var(--neon-cyan); box-shadow: 0 0 15px rgba(0, 243, 255, 0.1); outline: none; }
-          .cyber-field::placeholder { color: #333; }
-
-          .cat-tab { flex: 1; text-align: center; padding: 10px; cursor: pointer; font-family: 'JetBrains Mono'; font-size: 0.8rem; font-weight: bold; background: #0a0a0a; border: 1px solid #333; color: #666; transition: all 0.2s; }
-          .cat-tab.active-text { background: rgba(0, 243, 255, 0.1); border-color: var(--neon-cyan); color: var(--neon-cyan); }
-          .cat-tab.active-ai { background: rgba(255, 0, 255, 0.1); border-color: var(--neon-pink); color: var(--neon-pink); }
-          .cat-tab:hover { background: #111; color: #fff; }
-
-          /* CORREÇÃO DO TOOL BUTTON */
-          .tool-btn {
-            display: flex; align-items: center; gap: 6px; padding: 8px 12px;
-            background: rgba(255,255,255,0.03); 
-            border: 1px solid var(--btn-color); /* Usa a variável local */
-            color: var(--btn-color);            /* Usa a variável local */
-            font-family: 'JetBrains Mono'; font-size: 0.75rem; font-weight: bold;
-            cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 2px;
-          }
-          
-          /* Efeito Hover: Fundo Neon + Texto Preto + Glow */
-          .tool-btn:hover { 
-            background: var(--btn-color); 
-            color: #000 !important; 
-            box-shadow: 0 0 15px var(--btn-color);
-            transform: translateY(-1px);
-          }
-          
-          .tool-btn svg { width: 14px; height: 14px; stroke-width: 2.5; stroke: currentColor; fill: none; transition: stroke 0.2s; }
-          
-          /* Dropdowns */
-          .cyber-dropdown { background: #000; border: 1px solid; padding: 4px; box-shadow: 0 0 20px rgba(0,0,0,0.8); z-index: 100; }
-          .dropdown-item { background: transparent; border: none; color: #fff; padding: 8px 12px; width: 100%; text-align: left; cursor: pointer; font-family: 'JetBrains Mono'; font-size: 0.8rem; transition: 0.2s; }
-          .dropdown-item:hover { background: rgba(255,255,255,0.1); color: #fff; font-weight: bold; }
-        `}</style>
-
         <div style={{ padding: '20px 25px', borderBottom: '1px solid #222', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'linear-gradient(90deg, rgba(0,0,0,1) 0%, rgba(10,10,15,1) 100%)' }}>
           <div>
-            <span style={{ fontSize: '0.7rem', color: 'var(--neon-purple)', fontFamily: 'JetBrains Mono', display: 'block', marginBottom: '4px' }}>
-              SYSTEM: {macroToEdit ? 'UPDATE_MODE' : 'INSERT_MODE'}
-            </span>
+            <span style={{ fontSize: '0.7rem', color: 'var(--neon-purple)', fontFamily: 'JetBrains Mono', display: 'block', marginBottom: '4px' }}>SYSTEM: {macroToEdit ? 'UPDATE_MODE' : 'INSERT_MODE'}</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-              <h2 className="title" style={{ fontSize: '1.8rem', margin: 0, color: '#fff', textShadow: '0 0 10px rgba(255,255,255,0.3)' }}>
-                {macroToEdit ? 'EDIT_PROTOCOL' : 'NEW_PROTOCOL'}
-              </h2>
+              <h2 className="title" style={{ fontSize: '1.8rem', margin: 0, color: '#fff', textShadow: '0 0 10px rgba(255,255,255,0.3)' }}>{macroToEdit ? 'EDIT_PROTOCOL' : 'NEW_PROTOCOL'}</h2>
               
               <button onClick={() => setIsPublic(!isPublic)} style={{ background: 'rgba(0,0,0,0.5)', border: `1px solid ${isPublic ? '#00ff00' : 'var(--neon-pink)'}`, color: isPublic ? '#00ff00' : 'var(--neon-pink)', borderRadius: '2px', padding: '4px 10px', fontSize: '0.7rem', cursor: 'pointer', fontFamily: 'JetBrains Mono', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s', boxShadow: isPublic ? '0 0 5px rgba(0,255,0,0.2)' : '0 0 5px rgba(255,0,85,0.2)' }}>
                 {isPublic ? ( <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg> UNLOCKED</> ) : ( <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> LOCKED</> )}
@@ -194,42 +149,23 @@ export function CreateMacroModal({ isOpen, onClose, onSuccess, userId, macroToEd
               </div>
             </div>
 
-            <textarea 
-              ref={textareaRef}
-              className="cyber-field" 
-              placeholder={appCategory === 'AI' ? "Digite o prompt para a IA..." : "Digite o texto da macro..."}
-              value={content} onChange={e => setContent(e.target.value)}
-              style={{ minHeight: '220px', lineHeight: '1.6', fontSize: '0.95rem', resize: 'vertical' }}
-            />
+            <textarea ref={textareaRef} className="cyber-field" placeholder={appCategory === 'AI' ? "Digite o prompt para a IA..." : "Digite o texto da macro..."} value={content} onChange={e => setContent(e.target.value)} style={{ minHeight: '220px', lineHeight: '1.6', fontSize: '0.95rem', resize: 'vertical' }} />
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
-            <button onClick={handleSave} disabled={loading} className="cyber-btn-main" style={{ minWidth: '180px' }}>
-              {loading ? 'PROCESSING...' : (macroToEdit ? 'SAVE_CHANGES' : 'COMPILE_MACRO')}
-            </button>
+            <button onClick={handleSave} disabled={loading} className="cyber-btn-main" style={{ minWidth: '180px' }}>{loading ? 'PROCESSING...' : (macroToEdit ? 'SAVE_CHANGES' : 'COMPILE_MACRO')}</button>
           </div>
-
         </div>
       </div>
     </div>
   );
 }
 
-// BOTÃO DA TOOLBAR (CORRIGIDO COM VARIÁVEIS CSS)
 function ToolButton({ label, svgPath, onClick, color }: any) {
-  // Passamos a cor via CSS Custom Property para o hover funcionar corretamente
   const style = { '--btn-color': color } as React.CSSProperties;
-  
   return (
-    <button 
-      onClick={onClick} 
-      className="tool-btn"
-      style={style} 
-      title={`Inserir ${label}`}
-    >
-      <svg viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
-        {svgPath}
-      </svg>
+    <button onClick={onClick} className="tool-btn" style={style} title={`Inserir ${label}`}>
+      <svg viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">{svgPath}</svg>
       {label}
     </button>
   );
