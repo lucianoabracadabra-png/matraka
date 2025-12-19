@@ -32,7 +32,7 @@ function App() {
   const [myUsername, setMyUsername] = useState('Loading...');
   
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false); // <--- ESTADO DO MODAL DE PERFIL
   const [macroToEdit, setMacroToEdit] = useState<Snippet | null>(null);
   const [isInputModalOpen, setIsInputModalOpen] = useState(false);
   const [varsToProcess, setVarsToProcess] = useState<string[]>([]);
@@ -68,24 +68,18 @@ function App() {
     if (!session) return;
     setLoading(true);
     
-    // 1. Busca Macros
     const { data: macrosData, error: macrosError } = await supabase
       .from('macros')
       .select('*, macro_likes(count), profiles!macros_user_id_fkey(username, email)')
       .order('created_at', { ascending: false });
 
-    // 2. Busca Likes (CORRIGIDO: Busca real)
     const { data: myLikesData } = await supabase.from('macro_likes').select('macro_id').eq('user_id', session.user.id);
-
-    // 3. Busca Kits
     const { data: kitsData } = await supabase.from('kits').select('*').eq('user_id', session.user.id).order('created_at');
     const { data: itemsData } = await supabase.from('kit_items').select('kit_id, macro_id');
 
     if (macrosError) {
       addToast('FALHA DE CONEXÃO', 'error');
     } else if (macrosData) {
-      
-      // CORRIGIDO: Cria o Set com os IDs que eu curti
       const myLikedIds = new Set(myLikesData?.map((l: any) => l.macro_id) || []);
 
       const mappedSnippets: Snippet[] = macrosData.map((macro: any) => ({
@@ -98,16 +92,12 @@ function App() {
         sourceFile: 'Geral', 
         folderName: 'Todas as Macros',
         likes_count: macro.macro_likes?.[0]?.count || 0,
-        
-        // CORRIGIDO: Agora usamos a variável myLikedIds aqui!
         liked_by_me: myLikedIds.has(macro.id),
-        
         author: macro.profiles?.username || macro.profiles?.email?.split('@')[0] || 'Unknown',
         created_at: macro.created_at 
       }));
       
       setAllSnippets(mappedSnippets);
-      
       if (kitsData) setMyKits(kitsData);
       
       const itemsMap: Record<string, Set<string>> = {};
@@ -218,10 +208,25 @@ function App() {
 
               <div>
                 <h1 className="title-glitch" data-text="MATRAKA" style={{ margin: 0, lineHeight: 1 }}>MATRAKA</h1>
+                
+                {/* ÁREA DE USUÁRIO ATUALIZADA: AGORA É CLICÁVEL */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '0.5rem' }}>
-                    <span className="subtitle" style={{fontFamily:'JetBrains Mono', color: '#fff'}}>
-                      USER: <span style={{color: '#9ca3af', fontWeight:'bold'}}>{myUsername}</span>
-                    </span>
+                    <button 
+                      onClick={() => setIsProfileOpen(true)} // <--- AÇÃO DE ABRIR MODAL
+                      className="user-btn"
+                      title="Clique para editar Perfil"
+                      style={{ 
+                        background: 'none', border: 'none', cursor: 'pointer', 
+                        fontFamily: 'JetBrains Mono', fontSize: '1rem', color: '#fff',
+                        padding: 0, textAlign: 'left', display: 'flex', alignItems: 'center', gap: '5px'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.color = 'var(--neon-cyan)'}
+                      onMouseLeave={(e) => e.currentTarget.style.color = '#fff'}
+                    >
+                      USER: <span style={{color: '#9ca3af', fontWeight:'bold', textDecoration: 'underline', textDecorationColor: 'rgba(255,255,255,0.3)'}}>{myUsername}</span>
+                      <span style={{fontSize:'0.8rem', opacity: 0.5}}>✎</span>
+                    </button>
+
                     <button onClick={handleLogout} className="btn-neon" style={{ fontSize: '0.7rem', padding: '2px 8px' }}>LOGOUT</button>
                 </div>
               </div>
@@ -294,6 +299,7 @@ function App() {
         ))}
 
         <CreateMacroModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={() => fetchMacros()} userId={session.user.id} macroToEdit={macroToEdit} />
+        {/* MODAL DE PERFIL: AGORA SERÁ ABERTO PELO BOTÃO NO HEADER */}
         <ProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} userId={session.user.id} onUpdate={() => { fetchUserProfile(session.user.id); fetchMacros(); }} />
         <InputVariableModal isOpen={isInputModalOpen} onClose={() => setIsInputModalOpen(false)} variables={varsToProcess} originalText={macroToProcess?.text || ''} />
         <AddToKitModal isOpen={isAddToKitOpen} onClose={() => { setIsAddToKitOpen(false); fetchMacros(); }} userId={session.user.id} macroId={macroIdToAdd} macroKits={getMacroKits(macroIdToAdd)} />
