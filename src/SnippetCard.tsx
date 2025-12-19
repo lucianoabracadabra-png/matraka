@@ -23,13 +23,12 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
   const [isLikeLoading, setIsLikeLoading] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
 
-  // --- LISTA DE ADMINS (IDs FIXOS DO SUPABASE) ---
+  // --- LISTA DE ADMINS ---
   const ADMIN_IDS = [
     '8c0bdcd1-336a-4de9-bd64-7d87f1ee36f2',
     'b3545b7e-8819-4728-a1ec-f991e1fd732d',
     'b6b523ce-569a-4110-9906-8f04127a89a8'
   ];
-  
   const isAdmin = ADMIN_IDS.includes(snippet.user_id);
 
   useEffect(() => {
@@ -49,8 +48,7 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
   const applyDynamicTranslations = (text: string) => {
     if (!text) return '';
     let newText = text;
-
-    // --- SINTAXE V15 ---
+    // SINTAXE V15
     newText = newText.replace(/\[wait:([\d\.]+)\]/gi, '<span class="macro-tag tag-wait">⏳ $1s</span>');
     newText = newText.replace(/\[wait\+([\d\.]+)s\]/gi, '<span class="macro-tag tag-wait">⏳ +$1s</span>');
     newText = newText.replace(/\[input:([^\]]+)\]/gi, '<span class="macro-tag" style="border-color:var(--neon-pink); color:var(--neon-pink); background:rgba(255,0,255,0.1)">✍ $1</span>');
@@ -62,7 +60,6 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
     newText = newText.replace(/\[tab\]/gi, '<span class="macro-tag tag-wait">⇥ TAB</span>');
     newText = newText.replace(/\[key:([^\]]+)\]/gi, '<span class="macro-tag tag-wait">⌨️ $1</span>');
     newText = newText.replace(/\{selection\}/gi, '<span class="macro-tag" style="border-color:#a855f7; color:#a855f7; font-weight:bold; box-shadow:0 0 5px #a855f7">✨ SELECTION (IA)</span>');
-
     return newText;
   };
 
@@ -172,6 +169,36 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
 
   return (
     <div className={`snippet-card ${cardClass}`} style={{ opacity: isDeleting ? 0.5 : 1, display: 'flex', flexDirection: 'column', height: '100%' }}>
+      
+      {/* ESTILOS LOCAIS PARA OS BOTÕES SVG */}
+      <style>{`
+        /* BASE BUTTON STYLE */
+        .cyber-icon-btn {
+          display: flex; align-items: center; gap: 6px;
+          padding: 6px 10px; border-radius: 4px;
+          font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; font-weight: bold;
+          cursor: pointer; transition: all 0.2s ease-in-out;
+          background: rgba(0,0,0,0.2);
+        }
+        .cyber-icon-btn svg { width: 14px; height: 14px; fill: currentColor; }
+        
+        /* KIT BUTTON (GREEN) */
+        .btn-neon-kit { border: 1px solid #00ff00; color: #00ff00; background: rgba(0, 255, 0, 0.05); }
+        .btn-neon-kit:hover, .btn-neon-kit.active { background: #00ff00; color: #000; box-shadow: 0 0 10px #00ff00; }
+
+        /* FORK BUTTON (CYAN) */
+        .btn-neon-fork { border: 1px solid var(--neon-cyan); color: var(--neon-cyan); background: rgba(0, 243, 255, 0.05); }
+        .btn-neon-fork:hover { background: var(--neon-cyan); color: #000; box-shadow: 0 0 10px var(--neon-cyan); }
+
+        /* LIKE BUTTON (PINK) */
+        .btn-neon-like { border: 1px solid var(--neon-pink); color: var(--neon-pink); background: rgba(255, 0, 255, 0.05); }
+        .btn-neon-like:hover, .btn-neon-like.active { background: var(--neon-pink); color: #000; box-shadow: 0 0 10px var(--neon-pink); }
+
+        /* EDIT BUTTON (YELLOW) */
+        .btn-neon-edit { border: 1px solid #ffff00; color: #ffff00; background: rgba(255, 255, 0, 0.05); }
+        .btn-neon-edit:hover { background: #ffff00; color: #000; box-shadow: 0 0 10px #ffff00; }
+      `}</style>
+
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
         <h3 className="snippet-name" style={{ margin: 0 }}>{snippet.name}</h3>
         {snippet.shortcut && <span className="snippet-shortcut">{snippet.shortcut}</span>}
@@ -182,7 +209,6 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
           {appType === 'AI' ? '🤖 AI POWERED' : '⚡ MACRO'}
         </span>
         
-        {/* TAG VISUAL DE PRIVACIDADE */}
         {!snippet.is_public && (
           <span style={{ marginLeft: '8px', fontSize: '0.7rem', fontWeight: 'bold', padding: '2px 6px', borderRadius: '4px', background: 'rgba(255, 0, 85, 0.15)', color: 'var(--neon-pink)', border: '1px solid var(--neon-pink)' }}>
             🔒 LOCKED
@@ -220,48 +246,68 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
         
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           
+          {/* BOTÃO KIT (VERDE) */}
           <button 
             onClick={() => onAddToKit(snippet.id)}
-            style={{ 
-              background: isInKit ? 'rgba(0, 255, 0, 0.1)' : 'rgba(255, 255, 255, 0.05)', 
-              border: isInKit ? '1px solid #00ff00' : '1px solid #666', 
-              color: isInKit ? '#00ff00' : '#fff', 
-              cursor: 'pointer', padding: '4px 8px', borderRadius: '4px', 
-              fontSize: '0.75rem', fontFamily: 'JetBrains Mono',
-              display: 'flex', alignItems: 'center', gap: '4px'
-            }} 
-            title={isInKit ? "Gerenciar Kits (Adicionado)" : "Adicionar a um Kit"}
+            className={`cyber-icon-btn btn-neon-kit ${isInKit ? 'active' : ''}`}
+            title={isInKit ? "Gerenciar Kits" : "Adicionar a um Kit"}
           >
-            {isInKit ? '✓ KIT' : '+ KIT'}
+            {/* Folder Icon */}
+            <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+            {isInKit ? 'SAVED' : 'KIT'}
           </button>
 
           {!isOwner && (
-            <button onClick={handleClone} disabled={isCloning} style={{ background: 'rgba(0, 243, 255, 0.1)', border: '1px solid var(--neon-cyan)', color: 'var(--neon-cyan)', cursor: 'pointer', padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem', fontFamily: 'JetBrains Mono', display: 'flex', alignItems: 'center', gap: '4px' }} title="FORK">
-              {isCloning ? '...' : <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2-2v1"></path></svg></>}
+            // BOTÃO FORK (CIANO)
+            <button 
+              onClick={handleClone} 
+              disabled={isCloning} 
+              className="cyber-icon-btn btn-neon-fork"
+              title="Clonar Macro"
+            >
+              {/* Copy/Fork Icon */}
+              <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2-2v1"></path></svg>
+              {isCloning ? '...' : 'FORK'}
             </button>
           )}
 
-          <button onClick={handleToggleLike} style={{ background: 'rgba(30, 41, 59, 0.5)', border: `1px solid ${isLiked ? '#ec4899' : '#475569'}`, color: isLiked ? '#ec4899' : '#94a3b8', cursor: 'pointer', padding: '4px 8px', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem' }}>
-            <span>{isLiked ? '❤️' : '🤍'}</span><span style={{ fontFamily: 'JetBrains Mono' }}>{likesCount}</span>
+          {/* BOTÃO LIKE (ROSA) */}
+          <button 
+            onClick={handleToggleLike} 
+            className={`cyber-icon-btn btn-neon-like ${isLiked ? 'active' : ''}`}
+          >
+            {/* Heart Icon */}
+            <svg viewBox="0 0 24 24" style={{fill: isLiked ? 'currentColor' : 'none', stroke: 'currentColor', strokeWidth: 2}}>
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+            </svg>
+            {likesCount}
           </button>
 
           {isOwner && (
             <>
-              <button onClick={() => onEdit(snippet)} style={{ background: 'rgba(255, 255, 0, 0.1)', border: '1px solid rgba(255, 255, 0, 0.5)', color: '#ffff00', cursor: 'pointer', padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem' }} title="EDIT">
-                ✎
+              {/* BOTÃO EDIT (AMARELO) */}
+              <button 
+                onClick={() => onEdit(snippet)} 
+                className="cyber-icon-btn btn-neon-edit"
+                title="Editar"
+              >
+                {/* Pencil Icon */}
+                <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
               </button>
               
+              {/* BOTÃO DELETE (ROSA - MANTIDO ESTILO X) */}
               <button 
                 onClick={handleDeleteClick} 
                 className="btn-delete-neon"
                 style={{ 
-                  borderRadius: '4px', padding: '4px 8px', fontSize: '0.75rem', 
+                  borderRadius: '4px', padding: '6px 10px', fontSize: '0.75rem', 
                   fontFamily: 'JetBrains Mono', cursor: 'pointer',
-                  fontWeight: deleteConfirm ? 'bold' : 'normal',
+                  fontWeight: deleteConfirm ? 'bold' : 'bold',
                   background: deleteConfirm ? 'var(--neon-pink)' : undefined,
-                  color: deleteConfirm ? '#000' : undefined
+                  color: deleteConfirm ? '#000' : undefined,
+                  display: 'flex', alignItems: 'center', justifyContent:'center', minWidth: '32px'
                 }} 
-                title="DELETE"
+                title="Deletar"
               >
                 {deleteConfirm ? 'CONFIRM?' : '✕'}
               </button>
