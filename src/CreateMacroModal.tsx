@@ -80,11 +80,22 @@ export function CreateMacroModal({ isOpen, onClose, onSuccess, userId, macroToEd
 
   if (!isOpen) return null;
 
+  // --- LÓGICA DE TEMA DINÂMICO ---
+  const isAI = appCategory === 'AI';
+  // Define a cor principal do modal
+  const themeColor = isAI ? 'var(--neon-pink)' : 'var(--neon-cyan)';
+
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)', backgroundColor: 'rgba(0, 0, 0, 0.8)' }}>
       
-      {/* Container Principal do Modal (Classes no CSS) */}
-      <div className="cyber-modal" style={{ width: '90%', maxWidth: '750px', display: 'flex', flexDirection: 'column' }}>
+      {/* INJETAMOS A VARIÁVEL --modal-theme AQUI */}
+      <div 
+        className="cyber-modal" 
+        style={{ 
+          width: '90%', maxWidth: '750px', display: 'flex', flexDirection: 'column',
+          '--modal-theme': themeColor // <--- MÁGICA AQUI
+        } as React.CSSProperties}
+      >
         
         {/* HEADER */}
         <div className="modal-header">
@@ -97,7 +108,6 @@ export function CreateMacroModal({ isOpen, onClose, onSuccess, userId, macroToEd
                 {macroToEdit ? 'EDIT_PROTOCOL' : 'NEW_PROTOCOL'}
               </h2>
               
-              {/* Botão de Privacidade */}
               <button 
                 onClick={() => setIsPublic(!isPublic)} 
                 className="btn-privacy"
@@ -111,19 +121,23 @@ export function CreateMacroModal({ isOpen, onClose, onSuccess, userId, macroToEd
               </button>
             </div>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer', fontSize: '1.2rem', transition: '0.2s' }} onMouseEnter={e=>e.currentTarget.style.color='var(--neon-red)'} onMouseLeave={e=>e.currentTarget.style.color='#666'}>✕</button>
+          {/* Botão Fechar herda a cor do tema no hover */}
+          <button 
+            onClick={onClose} 
+            style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer', fontSize: '1.2rem', transition: '0.2s' }} 
+            onMouseEnter={e=>e.currentTarget.style.color=themeColor} 
+            onMouseLeave={e=>e.currentTarget.style.color='#666'}
+          >✕</button>
         </div>
 
-        {/* BODY (Scrollável se necessário) */}
+        {/* BODY */}
         <div className="modal-body">
           
-          {/* NOME */}
           <div>
             <label className="input-label">PROTOCOL_NAME</label>
             <input className="cyber-field" placeholder="Ex: Saudação Bom Dia" value={title} onChange={e => setTitle(e.target.value)} autoFocus />
           </div>
           
-          {/* TRIGGER + CATEGORIA (Responsivo) */}
           <div className="modal-row-responsive">
             <div style={{ flex: 1 }}>
               <label className="input-label">TRIGGER_KEY</label>
@@ -133,25 +147,15 @@ export function CreateMacroModal({ isOpen, onClose, onSuccess, userId, macroToEd
             <div style={{ width: '200px', flexShrink: 0 }}>
               <label className="input-label">CATEGORY</label>
               <div className="cat-selector">
-                <div 
-                  className={`cat-option ${appCategory === 'TEXT' ? 'active' : ''}`} 
-                  onClick={() => setAppCategory('TEXT')}
-                  style={appCategory === 'TEXT' ? { color: 'var(--neon-cyan)', borderBottom: '2px solid var(--neon-cyan)' } : {}}
-                >TEXT</div>
-                <div 
-                  className={`cat-option ${appCategory === 'AI' ? 'active' : ''}`} 
-                  onClick={() => setAppCategory('AI')}
-                  style={appCategory === 'AI' ? { color: 'var(--neon-pink)', borderBottom: '2px solid var(--neon-pink)' } : {}}
-                >AI</div>
+                <div className={`cat-option ${appCategory === 'TEXT' ? 'active-text' : ''}`} onClick={() => setAppCategory('TEXT')}>TEXT</div>
+                <div className={`cat-option ${appCategory === 'AI' ? 'active-ai' : ''}`} onClick={() => setAppCategory('AI')}>AI</div>
               </div>
             </div>
           </div>
 
-          {/* ÁREA DE CONTEÚDO */}
           <div style={{ display:'flex', flexDirection:'column', flex: 1 }}>
             <label className="input-label">DATA_CONTENT</label>
             
-            {/* TOOLBAR */}
             <div className="editor-toolbar">
               {appCategory === 'AI' ? (
                 <ToolButton label="AI SELECT" color="#a855f7" onClick={() => insertTag('{selection}')} svgPath={<><path d="M20 12v6M12 20h6M12 4H6M4 12V6M2 2L22 22M12 12l8-8M12 12L4 20" /></>} />
@@ -171,7 +175,6 @@ export function CreateMacroModal({ isOpen, onClose, onSuccess, userId, macroToEd
 
               <ToolButton label="DOM" color="#f59e0b" onClick={() => insertTag('[dom:.classe]')} svgPath={<><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></>} />
               
-              {/* KEYPRESS MENU */}
               <div style={{ position: 'relative' }}>
                 <ToolButton label="KEYPRESS" color="var(--neon-cyan)" onClick={() => setShowKeypressMenu(!showKeypressMenu)} svgPath={<><rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect><line x1="6" y1="12" x2="18" y2="12"></line></>} />
                 {showKeypressMenu && (
@@ -183,7 +186,6 @@ export function CreateMacroModal({ isOpen, onClose, onSuccess, userId, macroToEd
                 )}
               </div>
               
-              {/* WAIT MENU */}
               <div style={{ position: 'relative' }}>
                 <ToolButton label="WAIT..." color="var(--neon-pink)" onClick={() => setShowWaitMenu(!showWaitMenu)} svgPath={<><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></>} />
                 {showWaitMenu && (
@@ -217,7 +219,6 @@ export function CreateMacroModal({ isOpen, onClose, onSuccess, userId, macroToEd
   );
 }
 
-// BOTÃO DA TOOLBAR (Usa a variável CSS --btn-color)
 function ToolButton({ label, svgPath, onClick, color }: any) {
   const style = { '--btn-color': color } as React.CSSProperties;
   return (
