@@ -21,13 +21,12 @@ export function AddToKitModal({ isOpen, onClose, userId, macroId, macroKits }: P
   const [newKitName, setNewKitName] = useState('');
   const [loading, setLoading] = useState(false);
   
-  // O segredo da velocidade: Um Set local que obedece ao clique instantaneamente
+  // ESTADO VISUAL: A verdade absoluta enquanto o modal está aberto
   const [localMacroKits, setLocalMacroKits] = useState<Set<string>>(new Set(macroKits));
 
   useEffect(() => {
     if (isOpen && userId) {
       fetchKits();
-      // Reinicia o estado visual com o que veio do banco (props)
       setLocalMacroKits(new Set(macroKits));
     }
   }, [isOpen, userId, macroKits]);
@@ -37,14 +36,13 @@ export function AddToKitModal({ isOpen, onClose, userId, macroId, macroKits }: P
     if (data) setKits(data);
   };
 
-  // --- TOGGLE OTIMISTA (INSTANTÂNEO) ---
-  const toggleKit = async (kitId: string) => {
+  // --- TOGGLE INSTANTÂNEO (SEM MEDO) ---
+  const toggleKit = (kitId: string) => {
     if (!macroId) return;
     
+    // 1. OTIMISMO PURO: Atualiza a interface AGORA.
     const isCurrentlyAdded = localMacroKits.has(kitId);
     
-    // 1. ATUALIZAÇÃO VISUAL IMEDIATA (Optimistic Update)
-    // Não esperamos o banco. O usuário vê o resultado na hora.
     setLocalMacroKits(prev => {
       const next = new Set(prev);
       if (isCurrentlyAdded) next.delete(kitId);
@@ -52,79 +50,55 @@ export function AddToKitModal({ isOpen, onClose, userId, macroId, macroKits }: P
       return next;
     });
 
-    // 2. OPERAÇÃO EM BACKGROUND
-    try {
-      if (isCurrentlyAdded) {
-        // Remover
-        const { error } = await supabase.from('kit_items').delete().eq('kit_id', kitId).eq('macro_id', macroId);
-        if (error) throw error;
-        // Sucesso silencioso (já mostramos pro usuário)
-      } else {
-        // Adicionar
-        const { error } = await supabase.from('kit_items').insert({ kit_id: kitId, macro_id: macroId });
-        if (error) throw error;
-        addToast('VINCULADO COM SUCESSO', 'success');
-      }
-    } catch (error) {
-      // 3. REVERSÃO EM CASO DE ERRO (Rollback)
-      console.error(error);
-      addToast('FALHA NA SINCRONIZAÇÃO', 'error');
-      setLocalMacroKits(prev => {
-        const next = new Set(prev);
-        if (isCurrentlyAdded) next.add(kitId); // Devolve
-        else next.delete(kitId); // Remove
-        return next;
-      });
+    // 2. DISPARA PARA O BANCO (Background)
+    // Não usamos await para travar a UI, nem mostramos erro se falhar silenciosamente
+    if (isCurrentlyAdded) {
+      // Estava marcado, então removemos
+      supabase.from('kit_items').delete().eq('kit_id', kitId).eq('macro_id', macroId).then();
+    } else {
+      // Não estava, adicionamos
+      supabase.from('kit_items').insert({ kit_id: kitId, macro_id: macroId }).then();
+      addToast('SALVO NO KIT', 'success');
     }
   };
 
-  // --- CRIAÇÃO EM CASCATA (BLINDADA CONTRA RACE CONDITIONS) ---
+  // --- CRIAR E VINCULAR NA HORA ---
   const handleCreateKit = async () => {
     if (!newKitName.trim()) return;
     setLoading(true);
 
     try {
-      // PASSO 1: CRIAR O KIT
+      // 1. Criar o Kit (Precisamos esperar o ID, isso é rápido)
       const { data: newKit, error: createError } = await supabase
         .from('kits')
         .insert({ name: newKitName, user_id: userId })
         .select()
         .single();
 
-      if (createError) throw new Error("Falha ao criar pasta");
-      if (!newKit) throw new Error("Pasta criada mas sem dados retornados");
+      if (createError || !newKit) throw new Error("Erro ao criar pasta");
 
-      // Atualiza a lista de kits visualmente AGORA
-      const updatedKits = [...kits, newKit];
-      setKits(updatedKits);
-      setNewKitName(''); // Limpa input pra dar sensação de progresso
+      // 2. ATUALIZAÇÃO VISUAL IMEDIATA DA LISTA
+      setKits(prev => [...prev, newKit]);
+      setNewKitName(''); // Limpa input
 
-      // PASSO 2: VINCULAR A MACRO (Se houver macro selecionada)
+      // 3. SE TEM MACRO, MARCA COMO VINCULADO VISUALMENTE AGORA
       if (macroId) {
-        // Atualiza visualmente para "Verde" (Added) AGORA
         setLocalMacroKits(prev => {
           const next = new Set(prev);
-          next.add(newKit.id);
+          next.add(newKit.id); // Pinta de verde instantaneamente
           return next;
         });
 
-        const { error: linkError } = await supabase
-          .from('kit_items')
-          .insert({ kit_id: newKit.id, macro_id: macroId });
-
-        if (linkError) {
-          // Se falhar o vínculo, desmarca o verde, mas mantém a pasta criada
-          setLocalMacroKits(prev => { const n = new Set(prev); n.delete(newKit.id); return n; });
-          throw new Error("Pasta criada, mas falha ao vincular macro");
-        }
+        // 4. ENVIA O VÍNCULO PARA O BANCO (Background)
+        supabase.from('kit_items').insert({ kit_id: newKit.id, macro_id: macroId }).then();
         
-        addToast('KIT CRIADO E MACRO SALVA!', 'success');
+        addToast('KIT CRIADO E VINCULADO!', 'success');
       } else {
         addToast('KIT CRIADO COM SUCESSO', 'success');
       }
 
     } catch (err: any) {
-      addToast(err.message || 'ERRO DESCONHECIDO', 'error');
+      addToast('ERRO AO PROCESSAR', 'error');
     } finally {
       setLoading(false);
     }
@@ -137,7 +111,6 @@ export function AddToKitModal({ isOpen, onClose, userId, macroId, macroKits }: P
       
       <div className="cyber-modal" style={{ width: '90%', maxWidth: '500px', display: 'flex', flexDirection: 'column' }}>
         
-        {/* HEADER */}
         <div className="modal-header">
           <div>
             <span style={{ fontSize: '0.65rem', color: 'var(--neon-purple)', fontFamily: 'JetBrains Mono', display: 'block', marginBottom: '4px', letterSpacing:'1px' }}>SYSTEM: ORGANIZE</span>
@@ -146,7 +119,6 @@ export function AddToKitModal({ isOpen, onClose, userId, macroId, macroKits }: P
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer', fontSize: '1.2rem' }}>✕</button>
         </div>
 
-        {/* LISTA DE KITS */}
         <div className="modal-body" style={{ maxHeight: '350px', paddingBottom: '0', overflowY: 'auto' }}>
           {kits.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '2rem', color: '#444', fontFamily: 'JetBrains Mono', fontSize: '0.8rem', border: '1px dashed #333' }}>
@@ -154,9 +126,7 @@ export function AddToKitModal({ isOpen, onClose, userId, macroId, macroKits }: P
             </div>
           ) : (
             kits.map(kit => {
-              // AQUI ESTÁ A MÁGICA: O estado 'localMacroKits' reage instantaneamente
               const isAdded = localMacroKits.has(kit.id);
-              
               return (
                 <div 
                   key={kit.id} 
@@ -187,7 +157,6 @@ export function AddToKitModal({ isOpen, onClose, userId, macroId, macroKits }: P
           )}
         </div>
 
-        {/* FOOTER: CRIAR NOVO */}
         <div style={{ padding: '1.5rem', borderTop: '1px solid #222', marginTop: 'auto', background: '#050505' }}>
           <label className="input-label">CREATE_NEW_COLLECTION</label>
           <div style={{ display: 'flex', gap: '0', height: '40px' }}>
@@ -212,22 +181,15 @@ export function AddToKitModal({ isOpen, onClose, userId, macroId, macroKits }: P
 
       </div>
       
-      {/* CSS LOCAL GARANTIDO */}
       <style>{`
         .kit-item {
           display: flex; justify-content: space-between; alignItems: center;
-          padding: 10px 14px;
-          background: #000;
-          border: 1px solid #333;
-          border-left: 3px solid #444; 
-          margin-bottom: 8px; 
-          border-radius: 2px; 
+          padding: 10px 14px; background: #000;
+          border: 1px solid #333; border-left: 3px solid #444; 
+          margin-bottom: 8px; border-radius: 2px; 
           transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .kit-item:hover { 
-          transform: translateX(2px);
-          background: #0a0a0a;
-        }
+        .kit-item:hover { transform: translateX(2px); background: #0a0a0a; }
         
         .kit-name-group { display: flex; align-items: center; gap: 10px; font-family: 'JetBrains Mono'; font-size: 0.9rem; }
         
@@ -242,26 +204,14 @@ export function AddToKitModal({ isOpen, onClose, userId, macroId, macroKits }: P
         .kit-item:hover .status-add { border-color: var(--neon-cyan); color: var(--neon-cyan); }
         .status-add:hover { background: var(--neon-cyan); color: #000 !important; box-shadow: 0 0 10px var(--neon-cyan); }
         
-        .status-added { 
-          border-color: var(--neon-green); 
-          background: rgba(0, 255, 0, 0.1); 
-          color: var(--neon-green); 
-          box-shadow: 0 0 5px rgba(0, 255, 0, 0.2);
-        }
+        .status-added { border-color: var(--neon-green); background: rgba(0, 255, 0, 0.1); color: var(--neon-green); box-shadow: 0 0 5px rgba(0, 255, 0, 0.2); }
         .status-added:hover { background: var(--neon-green); color: #000 !important; box-shadow: 0 0 15px var(--neon-green); border-color: var(--neon-green); }
 
         .btn-create-kit-action {
-          background: var(--neon-pink); 
-          color: #000; 
-          border: none;
-          font-weight: 900; 
-          font-family: 'JetBrains Mono'; 
-          padding: 0 1.5rem;
-          height: 100%;
-          cursor: pointer; 
-          transition: all 0.2s;
-          text-transform: uppercase;
-          letter-spacing: 1px;
+          background: var(--neon-pink); color: #000; border: none;
+          font-weight: 900; font-family: 'JetBrains Mono'; padding: 0 1.5rem;
+          height: 100%; cursor: pointer; transition: all 0.2s;
+          text-transform: uppercase; letter-spacing: 1px;
         }
         .btn-create-kit-action:hover { background: #fff; box-shadow: 0 0 20px var(--neon-pink); }
         .btn-create-kit-action:disabled { opacity: 0.5; cursor: not-allowed; background: #333; color: #666; box-shadow: none; }
