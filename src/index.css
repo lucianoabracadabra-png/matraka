@@ -124,7 +124,7 @@ body {
   text-shadow: 0 0 10px rgba(0,0,0,0.5);
 }
 
-/* --- BOTÕES DE AÇÃO (Cards) --- */
+/* --- BOTÕES DE AÇÃO (Cards) - ATUALIZADO --- */
 .cyber-icon-btn, .cyber-action-btn {
   display: flex; align-items: center; gap: 6px;
   padding: 6px 10px; border-radius: 2px;
@@ -139,22 +139,43 @@ body {
   stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: all 0.2s;
 }
 
-/* Variações de Cores: Hover = Fundo Colorido + Texto Preto */
-/* KIT (Verde) */
+/* Variações de Cores: Hover/Active = Fundo Preto + Glow Colorido */
+
+/* KIT (Verde) - AQUI ESTÁ A MUDANÇA QUE VOCÊ PEDIU */
 .btn-kit { border-color: var(--neon-green); color: var(--neon-green); }
-.btn-kit:hover, .btn-kit.active { background: var(--neon-green); color: #000 !important; box-shadow: 0 0 15px var(--neon-green); border-color: var(--neon-green); }
+.btn-kit:hover, .btn-kit.active { 
+  background: #000; 
+  color: var(--neon-green) !important; 
+  box-shadow: 0 0 15px var(--neon-green); 
+  border-color: var(--neon-green); 
+}
 
 /* COPY (Ciano) */
 .btn-copy, .btn-neon-copy { border-color: var(--neon-cyan); color: var(--neon-cyan); }
-.btn-copy:hover, .btn-neon-copy:hover { background: var(--neon-cyan); color: #000 !important; box-shadow: 0 0 15px var(--neon-cyan); border-color: var(--neon-cyan); }
+.btn-copy:hover, .btn-neon-copy:hover { 
+  background: #000; 
+  color: var(--neon-cyan) !important; 
+  box-shadow: 0 0 15px var(--neon-cyan); 
+  border-color: var(--neon-cyan); 
+}
 
 /* LIKE (Rosa) */
 .btn-like, .btn-neon-like { border-color: var(--neon-pink); color: var(--neon-pink); }
-.btn-like:hover, .btn-like.active, .btn-neon-like:hover, .btn-neon-like.active { background: var(--neon-pink); color: #000 !important; box-shadow: 0 0 15px var(--neon-pink); border-color: var(--neon-pink); }
+.btn-like:hover, .btn-like.active, .btn-neon-like:hover, .btn-neon-like.active { 
+  background: #000; 
+  color: var(--neon-pink) !important; 
+  box-shadow: 0 0 15px var(--neon-pink); 
+  border-color: var(--neon-pink); 
+}
 
 /* EDIT (Amarelo) */
 .btn-edit, .btn-neon-edit { border-color: var(--neon-yellow); color: var(--neon-yellow); }
-.btn-edit:hover, .btn-neon-edit:hover { background: var(--neon-yellow); color: #000 !important; box-shadow: 0 0 15px var(--neon-yellow); border-color: var(--neon-yellow); }
+.btn-edit:hover, .btn-neon-edit:hover { 
+  background: #000; 
+  color: var(--neon-yellow) !important; 
+  box-shadow: 0 0 15px var(--neon-yellow); 
+  border-color: var(--neon-yellow); 
+}
 
 /* DELETE (Vermelho) */
 .btn-delete, .btn-delete-neon { 
@@ -164,8 +185,10 @@ body {
   display: flex; align-items: center; justifyContent: center; min-width: 32px; transition: all 0.2s;
 }
 .btn-delete:hover, .btn-delete-neon:hover { 
-  background: var(--neon-red); color: #000 !important; 
-  box-shadow: 0 0 15px var(--neon-red); border-color: var(--neon-red);
+  background: #000; 
+  color: var(--neon-red) !important; 
+  box-shadow: 0 0 15px var(--neon-red); 
+  border-color: var(--neon-red);
 }
 
 /* --- TAGS & BUBBLES --- */
@@ -226,50 +249,16 @@ body {
 .modal-row-responsive { display: flex; gap: 1.5rem; }
 @media (max-width: 600px) { .modal-row-responsive { flex-direction: column; gap: 1rem; } }
 
-/* --- Selector de Categoria (Tabs) --- */
-.cat-selector { 
-  display: flex; 
-  background: #000; /* Fundo preto para o container */
-  border: 1px solid #333; 
-  border-radius: 2px; 
-  padding: 2px; /* Espacinho interno */
-  gap: 2px;
-}
-
+/* Selector de Categoria */
+.cat-selector { display: flex; background: #000; border: 1px solid #333; border-radius: 2px; padding: 2px; gap: 2px; }
 .cat-option { 
-  flex: 1; 
-  text-align: center; 
-  padding: 0.8rem; 
-  cursor: pointer; 
-  font-family: 'JetBrains Mono'; 
-  font-size: 0.75rem; 
-  font-weight: bold; 
-  color: #666; 
-  border: 1px solid transparent; /* Reserva espaço para borda não pular */
-  border-radius: 2px;
-  transition: all 0.2s; 
+  flex: 1; text-align: center; padding: 0.8rem; cursor: pointer; 
+  font-family: 'JetBrains Mono'; font-size: 0.75rem; font-weight: bold; 
+  color: #666; border: 1px solid transparent; border-radius: 2px; transition: all 0.2s; 
 }
-
-.cat-option:hover { 
-  background: rgba(255,255,255,0.05); 
-  color: #fff; 
-}
-
-/* ESTADO ATIVO: TEXT (CIANO) */
-.cat-option.active-text { 
-  background: rgba(0, 243, 255, 0.1); 
-  border: 1px solid var(--neon-cyan); 
-  color: var(--neon-cyan); 
-  box-shadow: inset 0 0 10px rgba(0, 243, 255, 0.15); /* Glow interno */
-}
-
-/* ESTADO ATIVO: AI (ROSA) */
-.cat-option.active-ai { 
-  background: rgba(255, 0, 255, 0.1); 
-  border: 1px solid var(--neon-pink); 
-  color: var(--neon-pink); 
-  box-shadow: inset 0 0 10px rgba(255, 0, 255, 0.15); /* Glow interno */
-}
+.cat-option:hover { background: rgba(255,255,255,0.05); color: #fff; }
+.cat-option.active-text { background: rgba(0, 243, 255, 0.1); border: 1px solid var(--neon-cyan); color: var(--neon-cyan); box-shadow: inset 0 0 10px rgba(0, 243, 255, 0.15); }
+.cat-option.active-ai { background: rgba(255, 0, 255, 0.1); border: 1px solid var(--neon-pink); color: var(--neon-pink); box-shadow: inset 0 0 10px rgba(255, 0, 255, 0.15); }
 
 /* Toolbar do Modal */
 .editor-toolbar {
@@ -314,6 +303,40 @@ body {
   cursor: pointer; background: rgba(0,0,0,0.5); transition: all 0.2s;
 }
 
+/* --- KITS BAR (Barra de Seleção de Kits) --- */
+.kits-container {
+  display: flex; gap: 0.8rem; padding: 1rem 0; overflow-x: auto; 
+  border-bottom: 1px solid #222; margin-bottom: 1rem; animation: fadeIn 0.3s ease-out;
+}
+.btn-add-kit {
+  background: var(--neon-pink); color: #000; border: none; border-radius: 2px;
+  padding: 8px 16px; cursor: pointer; font-weight: 900; font-size: 0.8rem;
+  font-family: 'JetBrains Mono'; text-transform: uppercase; letter-spacing: 1px;
+  transition: all 0.2s; box-shadow: 0 0 10px rgba(255, 0, 255, 0.3); white-space: nowrap;
+}
+.btn-add-kit:hover { background: #fff; box-shadow: 0 0 20px var(--neon-pink); transform: translateY(-1px); }
+
+.kit-tab {
+  display: flex; align-items: center; background: rgba(255,255,255,0.02);
+  border: 1px solid #333; border-radius: 2px; transition: all 0.2s ease; white-space: nowrap;
+}
+.kit-tab-name {
+  background: transparent; border: none; color: #888; padding: 8px 12px;
+  cursor: pointer; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem;
+  font-weight: normal; transition: all 0.2s;
+}
+.kit-tab:hover { border-color: var(--neon-cyan); box-shadow: 0 0 15px rgba(0, 243, 255, 0.15); }
+.kit-tab:hover .kit-tab-name { color: var(--neon-cyan); }
+.kit-tab.active { background: rgba(0, 243, 255, 0.05); border-color: var(--neon-cyan); box-shadow: 0 0 15px rgba(0, 243, 255, 0.2); }
+.kit-tab.active .kit-tab-name { color: var(--neon-cyan); font-weight: bold; }
+
+.btn-delete-kit {
+  background: transparent; border: none; border-left: 1px solid #333; color: #666;
+  cursor: pointer; padding: 8px 10px; font-size: 10px; transition: all 0.2s;
+  display: flex; align-items: center; height: 100%;
+}
+.btn-delete-kit:hover { color: var(--neon-red); background: rgba(255, 42, 42, 0.1); border-left-color: var(--neon-red); }
+
 /* --- LOADING SYSTEM --- */
 .loading-container {
   display: flex; flex-direction: column; align-items: center;
@@ -356,96 +379,3 @@ body {
 ::-webkit-scrollbar-track { background: #000; }
 ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--neon-cyan); }
-
-/* --- KITS BAR (Barra de Seleção de Kits) --- */
-.kits-container {
-  display: flex; 
-  gap: 0.8rem; 
-  padding: 1rem 0; 
-  overflow-x: auto; 
-  border-bottom: 1px solid #222;
-  margin-bottom: 1rem;
-  animation: fadeIn 0.3s ease-out;
-}
-
-/* Botão "+ NEW KIT" (Estilo Sólido Rosa) */
-.btn-add-kit {
-  background: var(--neon-pink);
-  color: #000;
-  border: none;
-  border-radius: 2px;
-  padding: 8px 16px;
-  cursor: pointer;
-  font-weight: 900;
-  font-size: 0.8rem;
-  font-family: 'JetBrains Mono';
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  transition: all 0.2s;
-  box-shadow: 0 0 10px rgba(255, 0, 255, 0.3);
-  white-space: nowrap;
-}
-.btn-add-kit:hover {
-  background: #fff;
-  box-shadow: 0 0 20px var(--neon-pink);
-  transform: translateY(-1px);
-}
-
-/* Botão de Kit Individual (Estilo Outline -> Glow) */
-.kit-tab {
-  display: flex;
-  align-items: center;
-  background: rgba(255,255,255,0.02);
-  border: 1px solid #333;
-  border-radius: 2px;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-}
-
-.kit-tab-name {
-  background: transparent;
-  border: none;
-  color: #888;
-  padding: 8px 12px;
-  cursor: pointer;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.8rem;
-  font-weight: normal;
-  transition: all 0.2s;
-}
-
-/* Hover do Kit */
-.kit-tab:hover {
-  border-color: var(--neon-cyan);
-  box-shadow: 0 0 15px rgba(0, 243, 255, 0.15);
-}
-.kit-tab:hover .kit-tab-name { color: var(--neon-cyan); }
-
-/* Estado Ativo (Selecionado) */
-.kit-tab.active {
-  background: rgba(0, 243, 255, 0.05);
-  border-color: var(--neon-cyan);
-  box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
-}
-.kit-tab.active .kit-tab-name {
-  color: var(--neon-cyan);
-  font-weight: bold;
-}
-
-/* Botão de Deletar Kit (Pequeno X) */
-.btn-delete-kit {
-  background: transparent;
-  border: none;
-  border-left: 1px solid #333;
-  color: #666;
-  cursor: pointer;
-  padding: 8px 10px;
-  font-size: 10px;
-  transition: all 0.2s;
-  display: flex; align-items: center; height: 100%;
-}
-.btn-delete-kit:hover {
-  color: var(--neon-red);
-  background: rgba(255, 42, 42, 0.1);
-  border-left-color: var(--neon-red);
-}
