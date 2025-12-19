@@ -16,19 +16,13 @@ interface Props {
 
 export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariables, onAddToKit, initialLikes, initialLiked, isInKit }: Props) {
   const { addToast } = useToast();
-  const [isDeleting, setIsDeleting] = useState(false);
   const [isCloning, setIsCloning] = useState(false);
   const [likesCount, setLikesCount] = useState(initialLikes);
   const [isLiked, setIsLiked] = useState(initialLiked);
   const [isLikeLoading, setIsLikeLoading] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
 
-  // --- LISTA DE ADMINS ---
-  const ADMIN_IDS = [
-    '8c0bdcd1-336a-4de9-bd64-7d87f1ee36f2',
-    'b3545b7e-8819-4728-a1ec-f991e1fd732d',
-    'b6b523ce-569a-4110-9906-8f04127a89a8'
-  ];
+  const ADMIN_IDS = ['8c0bdcd1-336a-4de9-bd64-7d87f1ee36f2', 'b3545b7e-8819-4728-a1ec-f991e1fd732d', 'b6b523ce-569a-4110-9906-8f04127a89a8'];
   const isAdmin = ADMIN_IDS.includes(snippet.user_id);
 
   useEffect(() => {
@@ -48,7 +42,6 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
   const applyDynamicTranslations = (text: string) => {
     if (!text) return '';
     let newText = text;
-    // SINTAXE V15
     newText = newText.replace(/\[wait:([\d\.]+)\]/gi, '<span class="macro-tag tag-wait">⏳ $1s</span>');
     newText = newText.replace(/\[wait\+([\d\.]+)s\]/gi, '<span class="macro-tag tag-wait">⏳ +$1s</span>');
     newText = newText.replace(/\[input:([^\]]+)\]/gi, '<span class="macro-tag" style="border-color:var(--neon-pink); color:var(--neon-pink); background:rgba(255,0,255,0.1)">✍ $1</span>');
@@ -128,8 +121,7 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
     if (error) {
       addToast('FALHA NA CLONAGEM: ' + error.message, 'error');
     } else {
-      addToast('MACRO CLONADA COM SUCESSO!', 'success');
-      onDelete(); 
+      addToast('MACRO COPIADA COM SUCESSO!', 'success');
     }
     setIsCloning(false);
   };
@@ -139,11 +131,9 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
       setDeleteConfirm(true);
       return; 
     }
-    setIsDeleting(true);
     const { error } = await supabase.from('macros').delete().eq('id', snippet.id);
     if (error) {
       addToast('ERRO AO DELETAR: ' + error.message, 'error');
-      setIsDeleting(false);
     } else {
       addToast('MACRO DELETADA.', 'info');
       onDelete();
@@ -168,33 +158,16 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
   const isOwner = snippet.user_id === userId;
 
   return (
-    <div className={`snippet-card ${cardClass}`} style={{ opacity: isDeleting ? 0.5 : 1, display: 'flex', flexDirection: 'column', height: '100%' }}>
-      
-      {/* ESTILOS LOCAIS PARA OS BOTÕES SVG */}
+    <div className={`snippet-card ${cardClass}`} style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <style>{`
-        /* BASE BUTTON STYLE */
-        .cyber-icon-btn {
-          display: flex; align-items: center; gap: 6px;
-          padding: 6px 10px; border-radius: 4px;
-          font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; font-weight: bold;
-          cursor: pointer; transition: all 0.2s ease-in-out;
-          background: rgba(0,0,0,0.2);
-        }
-        .cyber-icon-btn svg { width: 14px; height: 14px; fill: currentColor; }
-        
-        /* KIT BUTTON (GREEN) */
+        .cyber-icon-btn { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; font-weight: bold; cursor: pointer; transition: all 0.2s ease-in-out; background: rgba(0,0,0,0.2); }
+        .cyber-icon-btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
         .btn-neon-kit { border: 1px solid #00ff00; color: #00ff00; background: rgba(0, 255, 0, 0.05); }
         .btn-neon-kit:hover, .btn-neon-kit.active { background: #00ff00; color: #000; box-shadow: 0 0 10px #00ff00; }
-
-        /* FORK BUTTON (CYAN) */
-        .btn-neon-fork { border: 1px solid var(--neon-cyan); color: var(--neon-cyan); background: rgba(0, 243, 255, 0.05); }
-        .btn-neon-fork:hover { background: var(--neon-cyan); color: #000; box-shadow: 0 0 10px var(--neon-cyan); }
-
-        /* LIKE BUTTON (PINK) */
+        .btn-neon-copy { border: 1px solid var(--neon-cyan); color: var(--neon-cyan); background: rgba(0, 243, 255, 0.05); }
+        .btn-neon-copy:hover { background: var(--neon-cyan); color: #000; box-shadow: 0 0 10px var(--neon-cyan); }
         .btn-neon-like { border: 1px solid var(--neon-pink); color: var(--neon-pink); background: rgba(255, 0, 255, 0.05); }
         .btn-neon-like:hover, .btn-neon-like.active { background: var(--neon-pink); color: #000; box-shadow: 0 0 10px var(--neon-pink); }
-
-        /* EDIT BUTTON (YELLOW) */
         .btn-neon-edit { border: 1px solid #ffff00; color: #ffff00; background: rgba(255, 255, 0, 0.05); }
         .btn-neon-edit:hover { background: #ffff00; color: #000; box-shadow: 0 0 10px #ffff00; }
       `}</style>
@@ -204,111 +177,50 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
         {snippet.shortcut && <span className="snippet-shortcut">{snippet.shortcut}</span>}
       </div>
 
-      <div style={{ marginBottom: '0.5rem' }}>
+      <div style={{ marginBottom: '0.5rem', display:'flex', gap:'8px', alignItems:'center' }}>
         <span style={{ fontSize: '0.7rem', fontWeight: 'bold', padding: '2px 6px', borderRadius: '4px', background: appType === 'AI' ? 'rgba(168, 85, 247, 0.2)' : 'rgba(0, 243, 255, 0.1)', color: appType === 'AI' ? '#a855f7' : 'var(--neon-cyan)', border: `1px solid ${appType === 'AI' ? '#a855f7' : 'var(--neon-cyan)'}` }}>
-          {appType === 'AI' ? '🤖 AI POWERED' : '⚡ MACRO'}
+          {appType === 'AI' ? 'AI' : 'TXT'}
         </span>
-        
         {!snippet.is_public && (
-          <span style={{ marginLeft: '8px', fontSize: '0.7rem', fontWeight: 'bold', padding: '2px 6px', borderRadius: '4px', background: 'rgba(255, 0, 85, 0.15)', color: 'var(--neon-pink)', border: '1px solid var(--neon-pink)' }}>
-            🔒 LOCKED
+          <span style={{ fontSize: '0.7rem', fontWeight: 'bold', padding: '2px 6px', borderRadius: '4px', background: 'rgba(255, 0, 85, 0.15)', color: 'var(--neon-pink)', border: '1px solid var(--neon-pink)', display:'flex', alignItems:'center', gap:'4px' }}>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> LOCKED
           </span>
         )}
       </div>
 
       <div style={{ fontFamily: 'JetBrains Mono', fontSize: '0.75rem', color: '#64748b', marginBottom: '1rem', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '8px' }}>
         <span>DEV_ID: <span style={{ color: '#94a3b8' }}>{snippet.author}</span></span>
-        {isAdmin && (
-          <span style={{ border: '1px solid #ffd700', color: '#ffd700', background: 'rgba(255, 215, 0, 0.1)', padding: '2px 6px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '3px', boxShadow: '0 0 5px rgba(255, 215, 0, 0.2)' }}>
-            ⭐ TEAM
-          </span>
-        )}
+        {isAdmin && <span style={{ border: '1px solid #ffd700', color: '#ffd700', background: 'rgba(255, 215, 0, 0.1)', padding: '2px 6px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '3px', boxShadow: '0 0 5px rgba(255, 215, 0, 0.2)' }}>⭐ TEAM</span>}
       </div>
 
-      <div 
-        className="snippet-content" 
-        style={{ flex: 1, marginBottom: '1rem', cursor: 'pointer' }}
-        onClick={handleCopy}
-        title="Clique para copiar"
-      >
-        <div className="chat-container">
-          {chatMessages.map((msgHtml, msgIdx) => (
-             msgHtml && <div key={msgIdx} className="chat-message"><div className="chat-bubble" dangerouslySetInnerHTML={{ __html: msgHtml }} /></div>
-          ))}
-        </div>
-        <div style={{ textAlign: 'center', marginTop: '0.5rem', opacity: 0.5, fontSize: '0.7rem', color: 'var(--neon-cyan)' }}>
-          [ CLIQUE PARA COPIAR ]
-        </div>
+      <div className="snippet-content" style={{ flex: 1, marginBottom: '1rem', cursor: 'pointer' }} onClick={handleCopy} title="Clique para copiar">
+        <div className="chat-container">{chatMessages.map((msgHtml, msgIdx) => (msgHtml && <div key={msgIdx} className="chat-message"><div className="chat-bubble" dangerouslySetInnerHTML={{ __html: msgHtml }} /></div>))}</div>
+        <div style={{ textAlign: 'center', marginTop: '0.5rem', opacity: 0.5, fontSize: '0.7rem', color: 'var(--neon-cyan)' }}>[ CLIQUE PARA COPIAR ]</div>
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.1)', marginTop: 'auto' }}>
         <span style={{ fontFamily: 'monospace', fontSize: '0.7rem', color: '#64748b' }}>{formattedDate}</span>
-        
         <div style={{ display: 'flex', gap: '0.5rem' }}>
-          
-          {/* BOTÃO KIT (VERDE) */}
-          <button 
-            onClick={() => onAddToKit(snippet.id)}
-            className={`cyber-icon-btn btn-neon-kit ${isInKit ? 'active' : ''}`}
-            title={isInKit ? "Gerenciar Kits" : "Adicionar a um Kit"}
-          >
-            {/* Folder Icon */}
+          <button onClick={() => onAddToKit(snippet.id)} className={`cyber-icon-btn btn-neon-kit ${isInKit ? 'active' : ''}`} title={isInKit ? "Gerenciar Kits" : "Adicionar a um Kit"}>
             <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
             {isInKit ? 'SAVED' : 'KIT'}
           </button>
-
           {!isOwner && (
-            // BOTÃO FORK (CIANO)
-            <button 
-              onClick={handleClone} 
-              disabled={isCloning} 
-              className="cyber-icon-btn btn-neon-fork"
-              title="Clonar Macro"
-            >
-              {/* Copy/Fork Icon */}
+            <button onClick={handleClone} disabled={isCloning} className="cyber-icon-btn btn-neon-copy" title="Copiar Macro para sua conta">
               <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2-2v1"></path></svg>
-              {isCloning ? '...' : 'FORK'}
+              {isCloning ? '...' : 'COPY'}
             </button>
           )}
-
-          {/* BOTÃO LIKE (ROSA) */}
-          <button 
-            onClick={handleToggleLike} 
-            className={`cyber-icon-btn btn-neon-like ${isLiked ? 'active' : ''}`}
-          >
-            {/* Heart Icon */}
-            <svg viewBox="0 0 24 24" style={{fill: isLiked ? 'currentColor' : 'none', stroke: 'currentColor', strokeWidth: 2}}>
-              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-            </svg>
+          <button onClick={handleToggleLike} className={`cyber-icon-btn btn-neon-like ${isLiked ? 'active' : ''}`}>
+            <svg viewBox="0 0 24 24" style={{fill: isLiked ? 'currentColor' : 'none'}}><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
             {likesCount}
           </button>
-
           {isOwner && (
             <>
-              {/* BOTÃO EDIT (AMARELO) */}
-              <button 
-                onClick={() => onEdit(snippet)} 
-                className="cyber-icon-btn btn-neon-edit"
-                title="Editar"
-              >
-                {/* Pencil Icon */}
-                <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+              <button onClick={() => onEdit(snippet)} className="cyber-icon-btn btn-neon-edit" title="Editar">
+                <svg viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
               </button>
-              
-              {/* BOTÃO DELETE (ROSA - MANTIDO ESTILO X) */}
-              <button 
-                onClick={handleDeleteClick} 
-                className="btn-delete-neon"
-                style={{ 
-                  borderRadius: '4px', padding: '6px 10px', fontSize: '0.75rem', 
-                  fontFamily: 'JetBrains Mono', cursor: 'pointer',
-                  fontWeight: deleteConfirm ? 'bold' : 'bold',
-                  background: deleteConfirm ? 'var(--neon-pink)' : undefined,
-                  color: deleteConfirm ? '#000' : undefined,
-                  display: 'flex', alignItems: 'center', justifyContent:'center', minWidth: '32px'
-                }} 
-                title="Deletar"
-              >
+              <button onClick={handleDeleteClick} className="btn-delete-neon" style={{ borderRadius: '4px', padding: '6px 10px', fontSize: '0.75rem', fontFamily: 'JetBrains Mono', cursor: 'pointer', fontWeight: 'bold', background: deleteConfirm ? 'var(--neon-pink)' : undefined, color: deleteConfirm ? '#000' : undefined, display: 'flex', alignItems: 'center', justifyContent:'center', minWidth: '32px' }} title="Deletar">
                 {deleteConfirm ? 'CONFIRM?' : '✕'}
               </button>
             </>
