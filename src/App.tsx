@@ -10,7 +10,6 @@ import { useToast } from './ToastContext';
 import type { Session } from '@supabase/supabase-js';
 import './index.css';
 
-// ADICIONADO: is_public
 interface Snippet { id: string; user_id: string; name: string; shortcut?: string; text?: string; app?: string; sourceFile: string; folderName: string; likes_count: number; liked_by_me: boolean; author: string; created_at: string; is_public: boolean; }
 interface Kit { id: string; name: string; }
 
@@ -62,7 +61,7 @@ function App() {
     await supabase.auth.signOut();
     setSession(null);
     setAllSnippets([]);
-    addToast('SESSÃO ENCERRADA', 'info');
+    addToast('SYSTEM DISCONNECTED', 'info');
   };
 
   const fetchMacros = useCallback(async () => {
@@ -79,7 +78,7 @@ function App() {
     const { data: itemsData } = await supabase.from('kit_items').select('kit_id, macro_id');
 
     if (macrosError) {
-      addToast('FALHA DE CONEXÃO', 'error');
+      addToast('CONNECTION FAILED', 'error');
     } else if (macrosData) {
       const myLikedIds = new Set(myLikesData?.map((l: any) => l.macro_id) || []);
 
@@ -96,7 +95,7 @@ function App() {
         liked_by_me: myLikedIds.has(macro.id),
         author: macro.profiles?.username || macro.profiles?.email?.split('@')[0] || 'Unknown',
         created_at: macro.created_at,
-        is_public: macro.is_public // <--- MAPEADO AQUI
+        is_public: macro.is_public
       }));
       
       setAllSnippets(mappedSnippets);
@@ -131,11 +130,11 @@ function App() {
   };
 
   const handleDeleteKit = async (kitId: string, kitName: string) => {
-    if (!confirm(`Deletar o kit "${kitName}"?`)) return;
+    if (!confirm(`Delete kit "${kitName}"?`)) return;
     const { error } = await supabase.from('kits').delete().eq('id', kitId);
-    if (error) addToast('ERRO AO DELETAR KIT', 'error');
+    if (error) addToast('ERROR DELETING KIT', 'error');
     else {
-        addToast('KIT REMOVIDO', 'info');
+        addToast('KIT REMOVED', 'info');
         fetchMacros();
         if (selectedKitId === kitId) setSelectedKitId(null);
     }
@@ -157,8 +156,6 @@ function App() {
       (snippet.author && snippet.author.toLowerCase().includes(term))
     );
 
-    // REGRA DE PRIVACIDADE:
-    // Se a macro NÃO é minha E NÃO é pública -> Esconde (Filtragem de segurança de UI)
     filtered = filtered.filter(s => s.user_id === session?.user.id || s.is_public);
 
     if (activeTab === 'MINE') filtered = filtered.filter(s => s.user_id === session?.user.id);
@@ -199,6 +196,7 @@ function App() {
           <div className="header-top" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
             <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
               
+              {/* LOGO */}
               <div style={{ width: '64px', height: '64px', background: 'rgba(5, 5, 10, 0.8)', border: '1px solid var(--neon-cyan)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 20px rgba(0, 243, 255, 0.2)', transform: 'skewX(-10deg)', position: 'relative', flexShrink: 0 }}>
                 <div style={{ position: 'absolute', top: '-1px', right: '-1px', width: '10px', height: '10px', background: 'var(--neon-pink)', clipPath: 'polygon(0 0, 100% 0, 100% 100%)' }}></div>
                 <svg width="42" height="42" viewBox="0 0 100 100" fill="none" strokeWidth="2" style={{ transform: 'skewX(10deg)' }}>
@@ -212,11 +210,11 @@ function App() {
               <div>
                 <h1 className="title-glitch" data-text="MATRAKA" style={{ margin: 0, lineHeight: 1 }}>MATRAKA</h1>
                 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '0.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginTop: '0.5rem' }}>
                     <button 
                       onClick={() => setIsProfileOpen(true)}
                       className="user-btn"
-                      title="Clique para editar Perfil"
+                      title="Edit Profile"
                       style={{ 
                         background: 'none', border: 'none', cursor: 'pointer', 
                         fontFamily: 'JetBrains Mono', fontSize: '1rem', color: '#fff',
@@ -229,7 +227,11 @@ function App() {
                       <span style={{fontSize:'0.8rem', opacity: 0.5}}>✎</span>
                     </button>
 
-                    <button onClick={handleLogout} className="btn-neon" style={{ fontSize: '0.7rem', padding: '2px 8px' }}>LOGOUT</button>
+                    {/* BOTÃO LOGOUT ATUALIZADO */}
+                    <button onClick={handleLogout} className="btn-logout">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                      LOGOUT
+                    </button>
                 </div>
               </div>
             </div>
@@ -240,7 +242,7 @@ function App() {
              <input type="text" className="search-input" placeholder="SEARCH_DATABASE..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginTop: '1.5rem', borderBottom: '1px solid rgba(0, 243, 255, 0.2)', paddingBottom: '0.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginTop: '1.5rem', borderBottom: '1px solid #333', paddingBottom: '0.5rem' }}>
             <div style={{ display: 'flex', gap: '1rem', overflowX: 'auto' }}>
               {['ALL', 'MINE', 'FAVS', 'KITS'].map((tab) => {
                 const isActive = activeTab === tab;
@@ -253,29 +255,31 @@ function App() {
               })}
             </div>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button onClick={() => setShowAI(!showAI)} style={{ border: `1px solid ${showAI ? 'var(--neon-pink)' : '#444'}`, color: showAI ? 'var(--neon-pink)' : '#666', background: showAI ? 'rgba(255,0,255,0.1)' : 'transparent', padding: '0.3rem 0.8rem', cursor: 'pointer', fontFamily: 'JetBrains Mono', fontSize: '0.8rem', borderRadius:'4px' }}>AI_MODE</button>
-              <button onClick={() => setShowText(!showText)} style={{ border: `1px solid ${showText ? 'var(--neon-cyan)' : '#444'}`, color: showText ? 'var(--neon-cyan)' : '#666', background: showText ? 'rgba(0,243,255,0.1)' : 'transparent', padding: '0.3rem 0.8rem', cursor: 'pointer', fontFamily: 'JetBrains Mono', fontSize: '0.8rem', borderRadius:'4px' }}>TXT_MODE</button>
+              <button onClick={() => setShowAI(!showAI)} style={{ border: `1px solid ${showAI ? 'var(--neon-pink)' : '#444'}`, color: showAI ? 'var(--neon-pink)' : '#666', background: showAI ? '#000' : 'transparent', padding: '0.3rem 0.8rem', cursor: 'pointer', fontFamily: 'JetBrains Mono', fontSize: '0.8rem', borderRadius:'2px', boxShadow: showAI ? '0 0 10px rgba(255,0,255,0.2)' : 'none' }}>AI_MODE</button>
+              <button onClick={() => setShowText(!showText)} style={{ border: `1px solid ${showText ? 'var(--neon-cyan)' : '#444'}`, color: showText ? 'var(--neon-cyan)' : '#666', background: showText ? '#000' : 'transparent', padding: '0.3rem 0.8rem', cursor: 'pointer', fontFamily: 'JetBrains Mono', fontSize: '0.8rem', borderRadius:'2px', boxShadow: showText ? '0 0 10px rgba(0,243,255,0.2)' : 'none' }}>TXT_MODE</button>
             </div>
           </div>
 
           {activeTab === 'KITS' && (
-              <div style={{ display: 'flex', gap: '0.8rem', padding: '1rem 0', overflowX: 'auto', borderBottom: '1px solid rgba(255,255,255,0.1)', animation: 'fadeIn 0.3s' }}>
-                  <button onClick={() => setIsAddToKitOpen(true)} style={{ background: 'var(--neon-pink)', color: '#000', border: 'none', borderRadius: '4px', padding: '6px 12px', cursor: 'pointer', fontWeight:'bold', fontSize:'0.8rem', fontFamily: 'JetBrains Mono' }}>+ NOVO KIT</button>
+              <div style={{ display: 'flex', gap: '0.8rem', padding: '1rem 0', overflowX: 'auto', borderBottom: '1px solid #222', animation: 'fadeIn 0.3s' }}>
+                  <button onClick={() => setIsAddToKitOpen(true)} style={{ background: 'var(--neon-pink)', color: '#000', border: 'none', borderRadius: '2px', padding: '6px 12px', cursor: 'pointer', fontWeight:'bold', fontSize:'0.8rem', fontFamily: 'JetBrains Mono' }}>+ NEW KIT</button>
                   {myKits.map(kit => (
-                      <div key={kit.id} style={{display:'flex', alignItems:'center', background: selectedKitId === kit.id ? 'rgba(0, 243, 255, 0.1)' : 'rgba(255,255,255,0.05)', borderRadius:'4px', border: selectedKitId === kit.id ? '1px solid var(--neon-cyan)' : '1px solid #444'}}>
+                      <div key={kit.id} style={{display:'flex', alignItems:'center', background: selectedKitId === kit.id ? '#000' : 'rgba(255,255,255,0.05)', borderRadius:'2px', border: selectedKitId === kit.id ? '1px solid var(--neon-cyan)' : '1px solid #444', boxShadow: selectedKitId === kit.id ? '0 0 10px rgba(0,243,255,0.2)' : 'none'}}>
                           <button onClick={() => setSelectedKitId(kit.id)} style={{ background: 'transparent', border: 'none', color: selectedKitId === kit.id ? 'var(--neon-cyan)':'#fff', padding: '6px 12px', cursor: 'pointer', fontFamily: 'JetBrains Mono', fontSize: '0.8rem', fontWeight: selectedKitId === kit.id ? 'bold':'normal' }}>
                               📁 {kit.name} <span style={{opacity:0.5}}>({kitItems[kit.id]?.size || 0})</span>
                           </button>
-                          <button onClick={() => handleDeleteKit(kit.id, kit.name)} style={{ background:'transparent', border:'none', color:'#666', cursor:'pointer', padding:'0 8px', fontSize:'10px' }} title="Deletar Kit">✕</button>
+                          <button onClick={() => handleDeleteKit(kit.id, kit.name)} style={{ background:'transparent', border:'none', color:'#666', cursor:'pointer', padding:'0 8px', fontSize:'10px' }} title="Delete Kit">✕</button>
                       </div>
                   ))}
               </div>
           )}
         </div>
 
+        {/* LOADING SYSTEM ATUALIZADO */}
         {loading && (
-          <div className="loading" style={{ flexDirection: 'column', gap: '1rem' }}>
-            <div className="glitch-text" data-text="LOADING_SYSTEM...">LOADING_SYSTEM...</div>
+          <div className="loading-container">
+            <div className="cyber-loader"></div>
+            <div className="loading-text">LOADING_SYSTEM...</div>
           </div>
         )}
 

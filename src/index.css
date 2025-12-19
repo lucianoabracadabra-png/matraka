@@ -385,3 +385,76 @@ body {
 .cat-option:hover { background: #111; color: #fff; }
 .cat-option.active { background: #000; } 
 /* As cores ativas são injetadas via style inline ou classes específicas para manter flexibilidade */
+
+
+/* --- LOADING SYSTEM (BOOT SEQUENCE) --- */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 60vh; /* Centraliza na tela */
+  position: relative;
+}
+
+/* Spinner de Carregamento (Hexagon ou Circle Tech) */
+.cyber-loader {
+  width: 60px; height: 60px;
+  border: 2px solid transparent;
+  border-top-color: var(--neon-cyan);
+  border-bottom-color: var(--neon-pink);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1.5rem;
+  position: relative;
+  box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
+}
+
+.cyber-loader::before {
+  content: '';
+  position: absolute; top: 5px; left: 5px; right: 5px; bottom: 5px;
+  border: 2px solid transparent;
+  border-left-color: var(--neon-purple);
+  border-right-color: var(--neon-green);
+  border-radius: 50%;
+  animation: spin 2s linear infinite reverse;
+}
+
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+/* Texto de Loading Glitch */
+.loading-text {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1rem;
+  letter-spacing: 3px;
+  color: #fff;
+  text-transform: uppercase;
+  animation: blink 1s infinite;
+}
+
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+
+/* --- BOTÃO LOGOUT (SYSTEM EXIT) --- */
+.btn-logout {
+  background: rgba(255, 42, 42, 0.05); /* Fundo vermelho bem sutil */
+  border: 1px solid var(--neon-red);
+  color: var(--neon-red);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  font-weight: bold;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex; align-items: center; gap: 6px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Hover: Fundo Vermelho Sólido + Texto Preto */
+.btn-logout:hover {
+  background: var(--neon-red);
+  color: #000;
+  box-shadow: 0 0 15px var(--neon-red);
+  transform: translateY(-1px);
+}
