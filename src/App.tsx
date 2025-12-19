@@ -31,7 +31,6 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [myUsername, setMyUsername] = useState('Loading...');
   
-  // Estado para confirmação de deleção de KIT
   const [kitDeleteConfirm, setKitDeleteConfirm] = useState<string | null>(null);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -55,7 +54,6 @@ function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Timer para resetar a confirmação de deleção do Kit
   useEffect(() => {
     if (kitDeleteConfirm) {
       const timer = setTimeout(() => setKitDeleteConfirm(null), 3000);
@@ -144,7 +142,6 @@ function App() {
     event.stopPropagation();
     
     if (kitDeleteConfirm === kitId) {
-      // Confirmado: Deletar
       const { error } = await supabase.from('kits').delete().eq('id', kitId);
       if (error) {
         addToast('ERRO AO DELETAR KIT', 'error');
@@ -155,7 +152,6 @@ function App() {
       }
       setKitDeleteConfirm(null);
     } else {
-      // Primeiro clique: Pedir confirmação
       setKitDeleteConfirm(kitId);
     }
   };
@@ -215,7 +211,6 @@ function App() {
         <div className="header">
           <div className="header-top" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
             <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
-              
               <div style={{ width: '64px', height: '64px', background: 'rgba(5, 5, 10, 0.8)', border: '1px solid var(--neon-cyan)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 20px rgba(0, 243, 255, 0.2)', transform: 'skewX(-10deg)', position: 'relative', flexShrink: 0 }}>
                 <div style={{ position: 'absolute', top: '-1px', right: '-1px', width: '10px', height: '10px', background: 'var(--neon-pink)', clipPath: 'polygon(0 0, 100% 0, 100% 100%)' }}></div>
                 <svg width="42" height="42" viewBox="0 0 100 100" fill="none" strokeWidth="2" style={{ transform: 'skewX(10deg)' }}>
@@ -225,10 +220,8 @@ function App() {
                   <path d="M30 85 L70 85" stroke="var(--neon-cyan)" strokeDasharray="2 4" />
                 </svg>
               </div>
-
               <div>
                 <h1 className="title-glitch" data-text="MATRAKA" style={{ margin: 0, lineHeight: 1 }}>MATRAKA</h1>
-                
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginTop: '0.5rem' }}>
                     <button 
                       onClick={() => setIsProfileOpen(true)}
@@ -245,7 +238,6 @@ function App() {
                       USER: <span style={{color: '#9ca3af', fontWeight:'bold', textDecoration: 'underline', textDecorationColor: 'rgba(255,255,255,0.3)'}}>{myUsername}</span>
                       <span style={{fontSize:'0.8rem', opacity: 0.5}}>✎</span>
                     </button>
-
                     <button onClick={handleLogout} className="btn-logout">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
                       LOGOUT
@@ -286,20 +278,24 @@ function App() {
                   
                   {myKits.map(kit => {
                     const isActive = selectedKitId === kit.id;
-                    const isDeleting = kitDeleteConfirm === kit.id; // Estado de confirmação
+                    const isDeleting = kitDeleteConfirm === kit.id;
                     
                     return (
                       <div 
                         key={kit.id} 
                         className={`kit-tab ${isActive ? 'active' : ''}`}
-                        // AQUI: Estilos dinâmicos para quando estiver deletando
                         style={isDeleting ? {
                           borderColor: 'var(--neon-red)',
                           backgroundColor: 'rgba(255, 42, 42, 0.1)',
                           boxShadow: '0 0 15px rgba(255, 42, 42, 0.2)'
                         } : {}}
                       >
-                          <button onClick={() => setSelectedKitId(kit.id)} className="kit-tab-name">
+                          <button 
+                            onClick={() => setSelectedKitId(kit.id)} 
+                            className="kit-tab-name"
+                            // AQUI: MUDANÇA DE COR DO TEXTO NO MODO DELETE
+                            style={isDeleting ? { color: 'var(--neon-red)' } : {}}
+                          >
                               {kit.name} <span style={{opacity:0.5}}>({kitItems[kit.id]?.size || 0})</span>
                           </button>
                           
@@ -311,7 +307,7 @@ function App() {
                               backgroundColor: 'var(--neon-red)', 
                               color: '#000', 
                               fontWeight: 'bold',
-                              fontFamily: 'JetBrains Mono', // Fonte forçada
+                              fontFamily: 'JetBrains Mono',
                               paddingRight: '12px'
                             } : {}}
                           >
