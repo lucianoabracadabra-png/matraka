@@ -31,6 +31,9 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [myUsername, setMyUsername] = useState('Loading...');
   
+  // Estado para confirmação de deleção de KIT
+  const [kitDeleteConfirm, setKitDeleteConfirm] = useState<string | null>(null);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [macroToEdit, setMacroToEdit] = useState<Snippet | null>(null);
@@ -51,6 +54,14 @@ function App() {
     });
     return () => subscription.unsubscribe();
   }, []);
+
+  // Timer para resetar a confirmação de deleção do Kit
+  useEffect(() => {
+    if (kitDeleteConfirm) {
+      const timer = setTimeout(() => setKitDeleteConfirm(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [kitDeleteConfirm]);
 
   const fetchUserProfile = async (userId: string) => {
     const { data } = await supabase.from('profiles').select('username, email').eq('id', userId).single();
@@ -129,14 +140,24 @@ function App() {
     setIsAddToKitOpen(true);
   };
 
-  const handleDeleteKit = async (kitId: string, kitName: string) => {
-    if (!confirm(`Delete kit "${kitName}"?`)) return;
-    const { error } = await supabase.from('kits').delete().eq('id', kitId);
-    if (error) addToast('ERROR DELETING KIT', 'error');
-    else {
-        addToast('KIT REMOVED', 'info');
+  // NOVA LÓGICA DE DELEÇÃO COM CONFIRMAÇÃO
+  const handleKitAction = async (kitId: string, event: React.MouseEvent) => {
+    event.stopPropagation(); // Impede selecionar a aba ao clicar no X
+    
+    if (kitDeleteConfirm === kitId) {
+      // Confirmado: Deletar
+      const { error } = await supabase.from('kits').delete().eq('id', kitId);
+      if (error) {
+        addToast('ERRO AO DELETAR KIT', 'error');
+      } else {
+        addToast('KIT REMOVIDO', 'info');
         fetchMacros();
         if (selectedKitId === kitId) setSelectedKitId(null);
+      }
+      setKitDeleteConfirm(null);
+    } else {
+      // Primeiro clique: Pedir confirmação
+      setKitDeleteConfirm(kitId);
     }
   };
 
@@ -226,7 +247,6 @@ function App() {
                       <span style={{fontSize:'0.8rem', opacity: 0.5}}>✎</span>
                     </button>
 
-                    {/* NOVO BOTÃO LOGOUT USANDO CLASSE CSS */}
                     <button onClick={handleLogout} className="btn-logout">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
                       LOGOUT
@@ -259,7 +279,6 @@ function App() {
             </div>
           </div>
 
-          {/* BARRA DE KITS ATUALIZADA (SEM EMOJI NA PASTA, USANDO CLASSES) */}
           {activeTab === 'KITS' && (
               <div className="kits-container">
                   <button onClick={() => setIsAddToKitOpen(true)} className="btn-add-kit">
@@ -268,13 +287,29 @@ function App() {
                   
                   {myKits.map(kit => {
                     const isActive = selectedKitId === kit.id;
+                    const isDeleting = kitDeleteConfirm === kit.id; // Estado de confirmação
+                    
                     return (
                       <div key={kit.id} className={`kit-tab ${isActive ? 'active' : ''}`}>
                           <button onClick={() => setSelectedKitId(kit.id)} className="kit-tab-name">
                               {kit.name} <span style={{opacity:0.5}}>({kitItems[kit.id]?.size || 0})</span>
                           </button>
-                          <button onClick={() => handleDeleteKit(kit.id, kit.name)} className="btn-delete-kit" title="Delete Kit">
-                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                          
+                          {/* BOTÃO DE DELETE COM LÓGICA DE CONFIRMAÇÃO */}
+                          <button 
+                            onClick={(e) => handleKitAction(kit.id, e)} 
+                            className="btn-delete-kit" 
+                            title="Delete Kit"
+                            style={isDeleting ? { 
+                              backgroundColor: 'var(--neon-red)', 
+                              color: '#000', 
+                              fontWeight: 'bold',
+                              paddingRight: '12px'
+                            } : {}}
+                          >
+                            {isDeleting ? 'CONFIRM?' : (
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                            )}
                           </button>
                       </div>
                     );
@@ -283,7 +318,7 @@ function App() {
           )}
         </div>
 
-        {/* LOADING SYSTEM ATUALIZADO */}
+        {/* LOADING SYSTEM */}
         {loading && (
           <div className="loading-container">
             <div className="cyber-loader"></div>
