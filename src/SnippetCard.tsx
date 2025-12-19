@@ -23,11 +23,15 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
   const [isLikeLoading, setIsLikeLoading] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
 
-  // LISTA DE ADMINS (Partes do nome que identificam a equipe)
-  const ADMIN_TAGS = ['ADM', 'GAB', 'DAY', 'RIO', 'LUC'];
+  // --- LISTA DE ADMINS (IDs FIXOS DO SUPABASE) ---
+  const ADMIN_IDS = [
+    '8c0bdcd1-336a-4de9-bd64-7d87f1ee36f2',
+    'b3545b7e-8819-4728-a1ec-f991e1fd732d',
+    'b6b523ce-569a-4110-9906-8f04127a89a8'
+  ];
   
-  // Verifica se o autor é admin (case insensitive)
-  const isAdmin = ADMIN_TAGS.some(tag => snippet.author?.toUpperCase().includes(tag));
+  // Verifica se o ID do dono da macro está na lista VIP
+  const isAdmin = ADMIN_IDS.includes(snippet.user_id);
 
   useEffect(() => {
     if (deleteConfirm) {
@@ -180,11 +184,11 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
         </span>
       </div>
 
-      {/* ÁREA DO DEV_ID COM BADGE DE ADMIN */}
+      {/* ÁREA DO DEV_ID COM BADGE DE ADMIN (POR UUID) */}
       <div style={{ fontFamily: 'JetBrains Mono', fontSize: '0.75rem', color: '#64748b', marginBottom: '1rem', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '8px' }}>
         <span>DEV_ID: <span style={{ color: '#94a3b8' }}>{snippet.author}</span></span>
         
-        {/* RENDERIZA O BADGE SE FOR ADMIN */}
+        {/* RENDERIZA O BADGE SE O ID ESTIVER NA LISTA */}
         {isAdmin && (
           <span style={{ 
             border: '1px solid #ffd700', 
