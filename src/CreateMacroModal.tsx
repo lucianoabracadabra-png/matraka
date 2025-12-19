@@ -144,19 +144,14 @@ export function CreateMacroModal({ isOpen, onClose, onSuccess, userId, macroToEd
               <input className="cyber-field" placeholder="Ex: /bomdia" value={shortcut} onChange={e => setShortcut(e.target.value)} />
             </div>
             
-          <div style={{ width: '200px', flexShrink: 0 }}>
+            <div style={{ width: '200px', flexShrink: 0 }}>
               <label className="input-label">CATEGORY</label>
               <div className="cat-selector">
-                <div 
-                  className={`cat-option ${appCategory === 'TEXT' ? 'active-text' : ''}`} 
-                  onClick={() => setAppCategory('TEXT')}
-                >TEXT</div>
-                <div 
-                  className={`cat-option ${appCategory === 'AI' ? 'active-ai' : ''}`} 
-                  onClick={() => setAppCategory('AI')}
-                >AI</div>
+                <div className={`cat-option ${appCategory === 'TEXT' ? 'active-text' : ''}`} onClick={() => setAppCategory('TEXT')}>TEXT</div>
+                <div className={`cat-option ${appCategory === 'AI' ? 'active-ai' : ''}`} onClick={() => setAppCategory('AI')}>AI</div>
               </div>
             </div>
+          </div>
 
           <div style={{ display:'flex', flexDirection:'column', flex: 1 }}>
             <label className="input-label">DATA_CONTENT</label>
