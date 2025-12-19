@@ -22,7 +22,12 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
   const [isLikeLoading, setIsLikeLoading] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
 
-  const ADMIN_IDS = ['8c0bdcd1-336a-4de9-bd64-7d87f1ee36f2', 'b3545b7e-8819-4728-a1ec-f991e1fd732d', 'b6b523ce-569a-4110-9906-8f04127a89a8'];
+  // --- LISTA DE ADMINS (IDs FIXOS DO SUPABASE) ---
+  const ADMIN_IDS = [
+    '8c0bdcd1-336a-4de9-bd64-7d87f1ee36f2',
+    'b3545b7e-8819-4728-a1ec-f991e1fd732d',
+    'b6b523ce-569a-4110-9906-8f04127a89a8'
+  ];
   const isAdmin = ADMIN_IDS.includes(snippet.user_id);
 
   useEffect(() => {
@@ -42,6 +47,8 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
   const applyDynamicTranslations = (text: string) => {
     if (!text) return '';
     let newText = text;
+
+    // --- SINTAXE V15 (MATRAKA ENGINE) ---
     newText = newText.replace(/\[wait:([\d\.]+)\]/gi, '<span class="macro-tag tag-wait">⏳ $1s</span>');
     newText = newText.replace(/\[wait\+([\d\.]+)s\]/gi, '<span class="macro-tag tag-wait">⏳ +$1s</span>');
     newText = newText.replace(/\[input:([^\]]+)\]/gi, '<span class="macro-tag" style="border-color:var(--neon-pink); color:var(--neon-pink); background:rgba(255,0,255,0.1)">✍ $1</span>');
@@ -52,7 +59,13 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
     newText = newText.replace(/\[enter\]/gi, '<span class="macro-tag tag-wait">↵ ENTER</span>');
     newText = newText.replace(/\[tab\]/gi, '<span class="macro-tag tag-wait">⇥ TAB</span>');
     newText = newText.replace(/\[key:([^\]]+)\]/gi, '<span class="macro-tag tag-wait">⌨️ $1</span>');
-    newText = newText.replace(/\{selection\}/gi, '<span class="macro-tag" style="border-color:#a855f7; color:#a855f7; font-weight:bold; box-shadow:0 0 5px #a855f7">✨ SELECTION (IA)</span>');
+    
+    // --- CORREÇÃO IA: SVG INJETADO DIRETO NO HTML ---
+    // Substitui o emoji ✨ pelo SVG path dentro do span
+    const aiIcon = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; margin-bottom:2px"><path d="M20 12v6M12 20h6M12 4H6M4 12V6M2 2L22 22M12 12l8-8M12 12L4 20"></path></svg>`;
+    
+    newText = newText.replace(/\{selection\}/gi, `<span class="macro-tag" style="border-color:#a855f7; color:#a855f7; font-weight:bold; box-shadow:0 0 5px #a855f7; display:inline-flex; align-items:center; gap:4px">${aiIcon} AI SELECT</span>`);
+
     return newText;
   };
 
@@ -159,6 +172,8 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
 
   return (
     <div className={`snippet-card ${cardClass}`} style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      
+      {/* ESTILOS LOCAIS PARA OS BOTÕES SVG */}
       <style>{`
         .cyber-icon-btn { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; font-weight: bold; cursor: pointer; transition: all 0.2s ease-in-out; background: rgba(0,0,0,0.2); }
         .cyber-icon-btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
@@ -190,7 +205,20 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
 
       <div style={{ fontFamily: 'JetBrains Mono', fontSize: '0.75rem', color: '#64748b', marginBottom: '1rem', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '8px' }}>
         <span>DEV_ID: <span style={{ color: '#94a3b8' }}>{snippet.author}</span></span>
-        {isAdmin && <span style={{ border: '1px solid #ffd700', color: '#ffd700', background: 'rgba(255, 215, 0, 0.1)', padding: '2px 6px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '3px', boxShadow: '0 0 5px rgba(255, 215, 0, 0.2)' }}>⭐ TEAM</span>}
+        
+        {/* CORREÇÃO DO BADGE OFICIAL (ESTRELA SVG) */}
+        {isAdmin && (
+          <span style={{ 
+            border: '1px solid #ffd700', color: '#ffd700', background: 'rgba(255, 215, 0, 0.1)', 
+            padding: '2px 6px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 'bold', 
+            display: 'flex', alignItems: 'center', gap: '4px', boxShadow: '0 0 5px rgba(255, 215, 0, 0.2)' 
+          }}>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
+            OFICIAL
+          </span>
+        )}
       </div>
 
       <div className="snippet-content" style={{ flex: 1, marginBottom: '1rem', cursor: 'pointer' }} onClick={handleCopy} title="Clique para copiar">
