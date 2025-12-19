@@ -140,9 +140,8 @@ function App() {
     setIsAddToKitOpen(true);
   };
 
-  // NOVA LÓGICA DE DELEÇÃO COM CONFIRMAÇÃO
   const handleKitAction = async (kitId: string, event: React.MouseEvent) => {
-    event.stopPropagation(); // Impede selecionar a aba ao clicar no X
+    event.stopPropagation();
     
     if (kitDeleteConfirm === kitId) {
       // Confirmado: Deletar
@@ -290,12 +289,20 @@ function App() {
                     const isDeleting = kitDeleteConfirm === kit.id; // Estado de confirmação
                     
                     return (
-                      <div key={kit.id} className={`kit-tab ${isActive ? 'active' : ''}`}>
+                      <div 
+                        key={kit.id} 
+                        className={`kit-tab ${isActive ? 'active' : ''}`}
+                        // AQUI: Estilos dinâmicos para quando estiver deletando
+                        style={isDeleting ? {
+                          borderColor: 'var(--neon-red)',
+                          backgroundColor: 'rgba(255, 42, 42, 0.1)',
+                          boxShadow: '0 0 15px rgba(255, 42, 42, 0.2)'
+                        } : {}}
+                      >
                           <button onClick={() => setSelectedKitId(kit.id)} className="kit-tab-name">
                               {kit.name} <span style={{opacity:0.5}}>({kitItems[kit.id]?.size || 0})</span>
                           </button>
                           
-                          {/* BOTÃO DE DELETE COM LÓGICA DE CONFIRMAÇÃO */}
                           <button 
                             onClick={(e) => handleKitAction(kit.id, e)} 
                             className="btn-delete-kit" 
@@ -304,6 +311,7 @@ function App() {
                               backgroundColor: 'var(--neon-red)', 
                               color: '#000', 
                               fontWeight: 'bold',
+                              fontFamily: 'JetBrains Mono', // Fonte forçada
                               paddingRight: '12px'
                             } : {}}
                           >
@@ -318,7 +326,6 @@ function App() {
           )}
         </div>
 
-        {/* LOADING SYSTEM */}
         {loading && (
           <div className="loading-container">
             <div className="cyber-loader"></div>
