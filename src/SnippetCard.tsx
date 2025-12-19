@@ -46,7 +46,7 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
     }
 
     navigator.clipboard.writeText(textToCopy)
-      .then(() => addToast('COPIADO PARA O CLIPBOARD!', 'success'))
+      .then(() => addToast('COPIADO!', 'success'))
       .catch(() => addToast('ERRO AO COPIAR', 'error'));
   };
 
@@ -112,10 +112,8 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
   const cardClass = appType === 'AI' ? 'card-ai' : 'card-text';
   const isOwner = snippet.user_id === userId;
 
-  // --- RENDERIZADOR DE TAGS (PARSER VISUAL) ---
-  // Transforma o texto cru em componentes React visuais
+  // --- RENDERIZADOR DE TAGS ---
   const renderMessageContent = (text: string) => {
-    // Regex para capturar tags [tag] ou {tag}
     const parts = text.split(/(\[.*?\]|\{.*?\})/g);
 
     return parts.map((part, index) => {
@@ -129,7 +127,7 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
       if (part.match(/^\[wait/i)) {
         let time = '...';
         if (part.includes(':')) time = part.split(':')[1].replace(']', '') + 's';
-        if (part.includes('+')) time = '+' + part.split('+')[1].replace(']', ''); // wait+1s -> +1s
+        if (part.includes('+')) time = '+' + part.split('+')[1].replace(']', ''); 
         return <TagBadge key={index} color="var(--neon-pink)" icon={<><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></>} label={`WAIT ${time}`} />;
       }
 
@@ -138,9 +136,9 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
         return <TagBadge key={index} color="var(--neon-purple)" icon={<><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></>} label="AGENTE" />;
       }
 
-      // 4. CLIPBOARD / PASTE (Ciano)
+      // 4. CLIPBOARD / PASTE (AGORA AMARELO)
       if (part.toLowerCase() === '[paste]') {
-        return <TagBadge key={index} color="var(--neon-cyan)" icon={<><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></>} label="PASTE" />;
+        return <TagBadge key={index} color="#ffff00" icon={<><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></>} label="PASTE" />;
       }
 
       // 5. CURSOR (Ciano)
@@ -154,13 +152,15 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
         return <TagBadge key={index} color="#f59e0b" icon={<><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></>} label={`DOM: ${selector}`} />;
       }
 
-      // 7. KEYPRESS (Ciano) - Inclui Enter, Tab, Key, etc
-      if (part.match(/^\[(key:|enter|tab|space|up|down|left|right|backspace|del|home|end)/i)) {
-        let keyName = part.replace('[', '').replace(']', '').replace('key:', '').toUpperCase();
+      // 7. KEYPRESS (Ciano)
+      // Removemos 'enter' daqui se quisermos que ele APENAS quebre linha, 
+      // mas se ele estiver no meio do texto sem quebrar, renderiza badge.
+      if (part.match(/^\[key:/i)) {
+        const keyName = part.replace(/^\[key:|\]$/gi, '').toUpperCase();
         return <TagBadge key={index} color="var(--neon-cyan)" icon={<><rect x="2" y="4" width="20" height="16" rx="2" ry="2"/><line x1="6" y1="12" x2="18" y2="12"/></>} label={keyName} />;
       }
 
-      // 8. AI SELECTION (Roxo Especial)
+      // 8. AI SELECTION (Roxo)
       if (part.toLowerCase() === '{selection}') {
         return <TagBadge key={index} color="#a855f7" icon={<path d="M20 12v6M12 20h6M12 4H6M4 12V6M2 2L22 22M12 12l8-8M12 12L4 20" />} label="SELECTION" />;
       }
@@ -170,52 +170,77 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
     });
   };
 
-  // Separa as mensagens por [enter] para criar balões separados
-  const chatBubbles = (snippet.text || '').split(/\[enter\]/gi).filter((msg: string) => msg.trim() !== '');
+  // --- SEPARADOR POR [key:enter] ---
+  const chatBubbles = (snippet.text || '').split(/\[key:enter\]/gi).filter((msg: string) => msg.trim() !== '');
 
   return (
     <div className={`snippet-card ${cardClass}`} style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       
-      {/* ESTILOS LOCAIS */}
+      {/* ESTILOS DE ALTO CONTRASTE */}
       <style>{`
-        .cyber-icon-btn { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; font-weight: bold; cursor: pointer; transition: all 0.2s ease-in-out; background: rgba(0,0,0,0.2); }
+        /* Card Base High Contrast */
+        .snippet-card {
+          background-color: #000000 !important; /* Preto Puro */
+          border-width: 1px !important;
+          border-style: solid !important;
+          box-shadow: none !important; /* Remove glow suave */
+          border-radius: 0px !important; /* Bordas retas glitch */
+        }
+        
+        .card-text { border-color: #333; }
+        .card-text:hover { border-color: var(--neon-cyan); }
+        
+        .card-ai { border-color: #333; }
+        .card-ai:hover { border-color: var(--neon-pink); }
+
+        /* Botões com fundo preto e borda colorida */
+        .cyber-icon-btn { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 2px; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; font-weight: bold; cursor: pointer; transition: all 0.1s; background: #000; border: 1px solid #333; color: #666; }
         .cyber-icon-btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-        .btn-neon-kit { border: 1px solid #00ff00; color: #00ff00; background: rgba(0, 255, 0, 0.05); }
-        .btn-neon-kit:hover, .btn-neon-kit.active { background: #00ff00; color: #000; box-shadow: 0 0 10px #00ff00; }
-        .btn-neon-copy { border: 1px solid var(--neon-cyan); color: var(--neon-cyan); background: rgba(0, 243, 255, 0.05); }
-        .btn-neon-copy:hover { background: var(--neon-cyan); color: #000; box-shadow: 0 0 10px var(--neon-cyan); }
-        .btn-neon-like { border: 1px solid var(--neon-pink); color: var(--neon-pink); background: rgba(255, 0, 255, 0.05); }
-        .btn-neon-like:hover, .btn-neon-like.active { background: var(--neon-pink); color: #000; box-shadow: 0 0 10px var(--neon-pink); }
-        .btn-neon-edit { border: 1px solid #ffff00; color: #ffff00; background: rgba(255, 255, 0, 0.05); }
-        .btn-neon-edit:hover { background: #ffff00; color: #000; box-shadow: 0 0 10px #ffff00; }
-        /* Tag Badge (Estilo dos botões do editor) */
-        .tag-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px; border-radius: 2px; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; font-weight: bold; background: rgba(0,0,0,0.3); border: 1px solid; margin: 0 2px; vertical-align: middle; box-shadow: 0 0 5px rgba(0,0,0,0.2); }
+        
+        /* Cores específicas no Hover/Active */
+        .btn-neon-kit:hover, .btn-neon-kit.active { border-color: #00ff00; color: #00ff00; background: #000; box-shadow: 0 0 0 1px #00ff00; }
+        .btn-neon-copy:hover { border-color: var(--neon-cyan); color: var(--neon-cyan); background: #000; box-shadow: 0 0 0 1px var(--neon-cyan); }
+        .btn-neon-like:hover, .btn-neon-like.active { border-color: var(--neon-pink); color: var(--neon-pink); background: #000; box-shadow: 0 0 0 1px var(--neon-pink); }
+        .btn-neon-edit:hover { border-color: #ffff00; color: #ffff00; background: #000; box-shadow: 0 0 0 1px #ffff00; }
+
+        /* Delete Button */
+        .btn-delete-neon { border-radius: 2px; padding: 6px 10px; font-size: 0.75rem; font-family: 'JetBrains Mono'; cursor: pointer; font-weight: bold; background: #000; color: #444; border: 1px solid #333; display: flex; align-items: center; justifyContent: center; min-width: 32px; transition: all 0.2s; }
+        .btn-delete-neon:hover { border-color: var(--neon-pink); color: var(--neon-pink); box-shadow: 0 0 0 1px var(--neon-pink); }
+
+        /* Tag Badge (Alto Contraste) */
+        .tag-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px; border-radius: 0px; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; font-weight: bold; background: #000; border: 1px solid; margin: 0 2px; vertical-align: middle; }
         .tag-badge svg { width: 10px; height: 10px; stroke-width: 2.5; }
+        
+        /* Chat Bubble (Alto Contraste) */
+        .chat-bubble { background: #050505; border: 1px solid #222; border-left: 2px solid #444; padding: 8px 10px; margin-bottom: 6px; font-family: monospace; font-size: 0.85rem; color: #ccc; }
+        .card-ai .chat-bubble { border-left-color: var(--neon-pink); }
+        .card-text .chat-bubble { border-left-color: var(--neon-cyan); }
       `}</style>
 
-      {/* HEADER DO CARD */}
+      {/* HEADER */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
-        <h3 className="snippet-name" style={{ margin: 0 }}>{snippet.name}</h3>
-        {snippet.shortcut && <span className="snippet-shortcut">{snippet.shortcut}</span>}
+        <h3 className="snippet-name" style={{ margin: 0, color: '#fff', textTransform:'uppercase', letterSpacing:'1px' }}>{snippet.name}</h3>
+        {snippet.shortcut && <span className="snippet-shortcut" style={{background:'#000', border:'1px solid #444', color:'#888', borderRadius:'0'}}>{snippet.shortcut}</span>}
       </div>
 
+      {/* BADGES SUPERIORES */}
       <div style={{ marginBottom: '0.5rem', display:'flex', gap:'8px', alignItems:'center' }}>
-        <span style={{ fontSize: '0.7rem', fontWeight: 'bold', padding: '2px 6px', borderRadius: '4px', background: appType === 'AI' ? 'rgba(168, 85, 247, 0.2)' : 'rgba(0, 243, 255, 0.1)', color: appType === 'AI' ? '#a855f7' : 'var(--neon-cyan)', border: `1px solid ${appType === 'AI' ? '#a855f7' : 'var(--neon-cyan)'}` }}>
+        <span style={{ fontSize: '0.7rem', fontWeight: 'bold', padding: '2px 6px', background: '#000', color: appType === 'AI' ? '#a855f7' : 'var(--neon-cyan)', border: `1px solid ${appType === 'AI' ? '#a855f7' : 'var(--neon-cyan)'}` }}>
           {appType === 'AI' ? 'AI' : 'TXT'}
         </span>
         {!snippet.is_public && (
-          <span style={{ fontSize: '0.7rem', fontWeight: 'bold', padding: '2px 6px', borderRadius: '4px', background: 'rgba(255, 0, 85, 0.15)', color: 'var(--neon-pink)', border: '1px solid var(--neon-pink)', display:'flex', alignItems:'center', gap:'4px' }}>
+          <span style={{ fontSize: '0.7rem', fontWeight: 'bold', padding: '2px 6px', background: '#000', color: 'var(--neon-pink)', border: '1px solid var(--neon-pink)', display:'flex', alignItems:'center', gap:'4px' }}>
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> LOCKED
           </span>
         )}
       </div>
 
-      <div style={{ fontFamily: 'JetBrains Mono', fontSize: '0.75rem', color: '#64748b', marginBottom: '1rem', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <span>DEV_ID: <span style={{ color: '#94a3b8' }}>{snippet.author}</span></span>
-        {isAdmin && <span style={{ border: '1px solid #ffd700', color: '#ffd700', background: 'rgba(255, 215, 0, 0.1)', padding: '2px 6px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '3px', boxShadow: '0 0 5px rgba(255, 215, 0, 0.2)' }}><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg> OFICIAL</span>}
+      <div style={{ fontFamily: 'JetBrains Mono', fontSize: '0.75rem', color: '#666', marginBottom: '1rem', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <span>DEV_ID: <span style={{ color: '#999' }}>{snippet.author}</span></span>
+        {isAdmin && <span style={{ border: '1px solid #ffd700', color: '#ffd700', background: '#000', padding: '2px 6px', fontSize: '0.65rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '3px' }}><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg> OFICIAL</span>}
       </div>
 
-      {/* ÁREA DE CONTEÚDO (CHAT VISUAL) */}
+      {/* CONTEÚDO (CHAT) */}
       <div className="snippet-content" style={{ flex: 1, marginBottom: '1rem', cursor: 'pointer' }} onClick={handleCopy} title="Clique para copiar">
         <div className="chat-container">
           {chatBubbles.map((msg: string, idx: number) => (
@@ -229,9 +254,9 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
         <div style={{ textAlign: 'center', marginTop: '0.5rem', opacity: 0.5, fontSize: '0.7rem', color: 'var(--neon-cyan)' }}>[ CLIQUE PARA COPIAR ]</div>
       </div>
 
-      {/* RODAPÉ E BOTÕES */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.1)', marginTop: 'auto' }}>
-        <span style={{ fontFamily: 'monospace', fontSize: '0.7rem', color: '#64748b' }}>{formattedDate}</span>
+      {/* FOOTER */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '0.75rem', borderTop: '1px solid #222', marginTop: 'auto' }}>
+        <span style={{ fontFamily: 'monospace', fontSize: '0.7rem', color: '#444' }}>{formattedDate}</span>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <button onClick={() => onAddToKit(snippet.id)} className={`cyber-icon-btn btn-neon-kit ${isInKit ? 'active' : ''}`} title={isInKit ? "Gerenciar Kits" : "Adicionar a um Kit"}>
             <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
@@ -252,7 +277,7 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
               <button onClick={() => onEdit(snippet)} className="cyber-icon-btn btn-neon-edit" title="Editar">
                 <svg viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
               </button>
-              <button onClick={handleDeleteClick} className="btn-delete-neon" style={{ borderRadius: '4px', padding: '6px 10px', fontSize: '0.75rem', fontFamily: 'JetBrains Mono', cursor: 'pointer', fontWeight: 'bold', background: deleteConfirm ? 'var(--neon-pink)' : undefined, color: deleteConfirm ? '#000' : undefined, display: 'flex', alignItems: 'center', justifyContent:'center', minWidth: '32px' }} title="Deletar">
+              <button onClick={handleDeleteClick} className="btn-delete-neon" title="Deletar">
                 {deleteConfirm ? 'CONFIRM?' : '✕'}
               </button>
             </>
@@ -263,7 +288,7 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
   );
 }
 
-// COMPONENTE VISUAL PARA AS TAGS
+// COMPONENTE TAG BADGE (ALTO CONTRASTE)
 function TagBadge({ icon, label, color }: any) {
   return (
     <span className="tag-badge" style={{ borderColor: color, color: color }}>
