@@ -114,33 +114,33 @@ export function CreateMacroModal({ isOpen, onClose, onSuccess, userId, macroToEd
             <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem', flexWrap: 'wrap', background: 'rgba(0, 0, 0, 0.3)', padding: '0.5rem', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.1)' }}>
               
               {appCategory === 'AI' ? (
-                // AI SELECT (Embrulhado em Fragment)
                 <ToolButton label="AI SELECT" svgPath={<><path d="M20 12v6M12 20h6M12 4H6M4 12V6M2 2L22 22M12 12l8-8M12 12L4 20" /></>} onClick={() => insertTag('{selection}')} color="#a855f7" />
               ) : (
                 <>
-                  {/* CURSOR (Embrulhado em Fragment) */}
                   <ToolButton label="CURSOR" svgPath={<><path d="M5 3h14M5 21h14M12 3v18" /></>} onClick={() => insertTag('[cursor]')} color="var(--neon-cyan)" />
-                  {/* CLIPBOARD (Embrulhado em Fragment) */}
                   <ToolButton label="CLIPBOARD" svgPath={<><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></>} onClick={() => insertTag('[paste]')} color="var(--neon-cyan)" />
                 </>
               )}
               <div style={{ width: '1px', background: 'rgba(255,255,255,0.2)', margin: '0 0.2rem' }}></div>
               
-              {/* AGENTE (Embrulhado em Fragment) */}
               <ToolButton label="AGENTE" svgPath={<><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></>} onClick={() => insertTag('[agente]')} color="var(--neon-purple)" />
               
-              {/* INPUT (Embrulhado em Fragment) */}
               <ToolButton label="INPUT" svgPath={<><path d="M12 19l7-7 3 3-7 7-3-3z"></path><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path><path d="M2 2l7.586 7.586"></path><circle cx="11" cy="11" r="2"></circle></>} onClick={() => { const tag = '[input:Título]'; if (textareaRef.current) { const start = textareaRef.current.selectionStart; const text = content; const newText = text.substring(0, start) + tag + text.substring(textareaRef.current.selectionEnd); setContent(newText); setTimeout(() => { if (textareaRef.current) { textareaRef.current.focus(); textareaRef.current.setSelectionRange(start + 7, start + 7 + 6); } }, 0); } }} color="var(--neon-pink)" />
               <div style={{ width: '1px', background: 'rgba(255,255,255,0.2)', margin: '0 0.2rem' }}></div>
 
-              {/* DOM (Embrulhado em Fragment) */}
               <ToolButton label="DOM" svgPath={<><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></>} onClick={() => insertTag('[dom:.classe]')} color="#f59e0b" />
               
               <div style={{ position: 'relative' }}>
-                {/* KEYPRESS (Embrulhado em Fragment) */}
+                {/* MENU KEYPRESS: AGORA COM right: 0 PARA NÃO SAIR DA TELA */}
                 <ToolButton label="KEYPRESS" svgPath={<><rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect><line x1="6" y1="8" x2="6" y2="8"></line><line x1="10" y1="8" x2="10" y2="8"></line><line x1="14" y1="8" x2="14" y2="8"></line><line x1="18" y1="8" x2="18" y2="8"></line><line x1="6" y1="12" x2="6" y2="12"></line><line x1="10" y1="12" x2="10" y2="12"></line><line x1="14" y1="12" x2="14" y2="12"></line><line x1="18" y1="12" x2="18" y2="12"></line><line x1="6" y1="16" x2="18" y2="16"></line></>} onClick={() => setShowKeypressMenu(!showKeypressMenu)} color="var(--neon-cyan)" />
                 {showKeypressMenu && (
-                  <div style={{ position: 'absolute', bottom: '110%', left: 0, background: '#05050a', border: '1px solid var(--neon-cyan)', display: 'grid', gridTemplateColumns:'1fr 1fr', gap: '2px', padding: '4px', zIndex: 10, boxShadow: '0 0 15px rgba(0,243,255,0.3)', minWidth: '180px' }}>
+                  <div style={{ 
+                    position: 'absolute', bottom: '110%', 
+                    right: 0, // <--- CORREÇÃO AQUI: Alinha pela direita
+                    background: '#05050a', border: '1px solid var(--neon-cyan)', 
+                    display: 'grid', gridTemplateColumns:'1fr 1fr', gap: '2px', padding: '4px', 
+                    zIndex: 10, boxShadow: '0 0 15px rgba(0,243,255,0.3)', minWidth: '180px' 
+                  }}>
                     {keysList.map(key => (
                       <button key={key} onClick={() => { insertTag(`[key:${key}]`); setShowKeypressMenu(false); }} style={{ background: 'rgba(0, 243, 255, 0.1)', border: 'none', color: '#fff', padding: '6px', cursor: 'pointer', fontFamily: 'JetBrains Mono', textAlign: 'center', fontSize: '0.7rem', textTransform: 'uppercase' }} className="hover-cyan">
                         {key}
@@ -151,7 +151,6 @@ export function CreateMacroModal({ isOpen, onClose, onSuccess, userId, macroToEd
               </div>
               
               <div style={{ position: 'relative' }}>
-                {/* WAIT (Embrulhado em Fragment) */}
                 <ToolButton label="WAIT..." svgPath={<><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></>} onClick={() => setShowWaitMenu(!showWaitMenu)} color="var(--neon-pink)" />
                 {showWaitMenu && (
                   <div style={{ position: 'absolute', bottom: '110%', left: 0, background: '#05050a', border: '1px solid var(--neon-pink)', display: 'flex', flexDirection: 'column', gap: '2px', padding: '4px', zIndex: 10, boxShadow: '0 0 15px rgba(255,0,85,0.3)', minWidth: '80px' }}>
