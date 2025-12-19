@@ -30,7 +30,6 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
     'b6b523ce-569a-4110-9906-8f04127a89a8'
   ];
   
-  // Verifica se o ID do dono da macro está na lista VIP
   const isAdmin = ADMIN_IDS.includes(snippet.user_id);
 
   useEffect(() => {
@@ -51,7 +50,7 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
     if (!text) return '';
     let newText = text;
 
-    // --- SINTAXE V15 (MATRAKA ENGINE) ---
+    // --- SINTAXE V15 ---
     newText = newText.replace(/\[wait:([\d\.]+)\]/gi, '<span class="macro-tag tag-wait">⏳ $1s</span>');
     newText = newText.replace(/\[wait\+([\d\.]+)s\]/gi, '<span class="macro-tag tag-wait">⏳ +$1s</span>');
     newText = newText.replace(/\[input:([^\]]+)\]/gi, '<span class="macro-tag" style="border-color:var(--neon-pink); color:var(--neon-pink); background:rgba(255,0,255,0.1)">✍ $1</span>');
@@ -182,27 +181,19 @@ export function SnippetCard({ snippet, userId, onDelete, onEdit, onProcessVariab
         <span style={{ fontSize: '0.7rem', fontWeight: 'bold', padding: '2px 6px', borderRadius: '4px', background: appType === 'AI' ? 'rgba(168, 85, 247, 0.2)' : 'rgba(0, 243, 255, 0.1)', color: appType === 'AI' ? '#a855f7' : 'var(--neon-cyan)', border: `1px solid ${appType === 'AI' ? '#a855f7' : 'var(--neon-cyan)'}` }}>
           {appType === 'AI' ? '🤖 AI POWERED' : '⚡ MACRO'}
         </span>
+        
+        {/* TAG VISUAL DE PRIVACIDADE */}
+        {!snippet.is_public && (
+          <span style={{ marginLeft: '8px', fontSize: '0.7rem', fontWeight: 'bold', padding: '2px 6px', borderRadius: '4px', background: 'rgba(255, 0, 85, 0.15)', color: 'var(--neon-pink)', border: '1px solid var(--neon-pink)' }}>
+            🔒 LOCKED
+          </span>
+        )}
       </div>
 
-      {/* ÁREA DO DEV_ID COM BADGE DE ADMIN (POR UUID) */}
       <div style={{ fontFamily: 'JetBrains Mono', fontSize: '0.75rem', color: '#64748b', marginBottom: '1rem', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '8px' }}>
         <span>DEV_ID: <span style={{ color: '#94a3b8' }}>{snippet.author}</span></span>
-        
-        {/* RENDERIZA O BADGE SE O ID ESTIVER NA LISTA */}
         {isAdmin && (
-          <span style={{ 
-            border: '1px solid #ffd700', 
-            color: '#ffd700', 
-            background: 'rgba(255, 215, 0, 0.1)', 
-            padding: '2px 6px', 
-            borderRadius: '4px', 
-            fontSize: '0.65rem', 
-            fontWeight: 'bold',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '3px',
-            boxShadow: '0 0 5px rgba(255, 215, 0, 0.2)'
-          }}>
+          <span style={{ border: '1px solid #ffd700', color: '#ffd700', background: 'rgba(255, 215, 0, 0.1)', padding: '2px 6px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '3px', boxShadow: '0 0 5px rgba(255, 215, 0, 0.2)' }}>
             ⭐ TEAM
           </span>
         )}

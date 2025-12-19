@@ -18,7 +18,8 @@ export function CreateMacroModal({ isOpen, onClose, onSuccess, userId, macroToEd
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [shortcut, setShortcut] = useState('');
-  const [appCategory, setAppCategory] = useState('TEXT'); // 'TEXT', 'AI', 'CODE'
+  const [appCategory, setAppCategory] = useState('TEXT');
+  const [isPublic, setIsPublic] = useState(false); // <--- NOVO ESTADO
 
   const [showWaitMenu, setShowWaitMenu] = useState(false);
 
@@ -28,11 +29,13 @@ export function CreateMacroModal({ isOpen, onClose, onSuccess, userId, macroToEd
       setContent(macroToEdit.text);
       setShortcut(macroToEdit.shortcut || '');
       setAppCategory(macroToEdit.app || 'TEXT');
+      setIsPublic(macroToEdit.is_public || false); // Carrega estado existente
     } else {
       setTitle('');
       setContent('');
       setShortcut('');
       setAppCategory('TEXT');
+      setIsPublic(false); // Padrão: Privado
     }
   }, [macroToEdit, isOpen]);
 
@@ -61,8 +64,6 @@ export function CreateMacroModal({ isOpen, onClose, onSuccess, userId, macroToEd
     setLoading(true);
     let error;
 
-    // DEFINE O TIPO PARA O BANCO DE DADOS
-    // Se a categoria for AI, o tipo TEM QUE SER 'ai' para o script executar corretamente.
     const macroType = appCategory === 'AI' ? 'ai' : 'text';
 
     const payload = {
@@ -70,7 +71,8 @@ export function CreateMacroModal({ isOpen, onClose, onSuccess, userId, macroToEd
       content,
       shortcut,
       app_category: appCategory,
-      type: macroType, // <--- CRÍTICO: ISSO SALVA COMO MACRO DE IA
+      type: macroType,
+      is_public: isPublic, // <--- SALVA NO BANCO
       updated_at: new Date()
     };
 
@@ -84,7 +86,7 @@ export function CreateMacroModal({ isOpen, onClose, onSuccess, userId, macroToEd
     } else {
       const { error: insertError } = await supabase
         .from('macros')
-        .insert({ ...payload, user_id: userId, is_public: false });
+        .insert({ ...payload, user_id: userId });
       error = insertError;
     }
 
@@ -114,9 +116,25 @@ export function CreateMacroModal({ isOpen, onClose, onSuccess, userId, macroToEd
             <span style={{ fontSize: '0.7rem', color: 'var(--neon-purple)', fontFamily: 'JetBrains Mono' }}>
               {macroToEdit ? 'SYSTEM: UPDATE_MODE' : 'SYSTEM: INSERT_MODE'}
             </span>
-            <h2 className="title" style={{ fontSize: '1.8rem', margin: 0, color: '#fff' }}>
-              {macroToEdit ? 'EDIT_PROTOCOL' : 'NEW_PROTOCOL'}
-            </h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <h2 className="title" style={{ fontSize: '1.8rem', margin: 0, color: '#fff' }}>
+                {macroToEdit ? 'EDIT_PROTOCOL' : 'NEW_PROTOCOL'}
+              </h2>
+              
+              {/* BOTÃO TOGGLE DE PRIVACIDADE */}
+              <button 
+                onClick={() => setIsPublic(!isPublic)}
+                style={{
+                  background: isPublic ? 'rgba(0, 255, 0, 0.1)' : 'rgba(255, 0, 85, 0.1)',
+                  border: `1px solid ${isPublic ? '#00ff00' : 'var(--neon-pink)'}`,
+                  color: isPublic ? '#00ff00' : 'var(--neon-pink)',
+                  borderRadius: '4px', padding: '2px 8px', fontSize: '0.7rem',
+                  cursor: 'pointer', fontFamily: 'JetBrains Mono', fontWeight: 'bold'
+                }}
+              >
+                {isPublic ? 'PUBLIC 🌍' : 'PRIVATE 🔒'}
+              </button>
+            </div>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--neon-pink)', cursor: 'pointer', fontSize: '1.2rem' }}>✕</button>
         </div>
@@ -125,13 +143,13 @@ export function CreateMacroModal({ isOpen, onClose, onSuccess, userId, macroToEd
           
           <div>
             <label className="cyber-label">PROTOCOL_NAME</label>
-            <input className="cyber-input" placeholder="Ex: Analisar Texto Cliente" value={title} onChange={e => setTitle(e.target.value)} autoFocus />
+            <input className="cyber-input" placeholder="Ex: Saudação Bom Dia" value={title} onChange={e => setTitle(e.target.value)} autoFocus />
           </div>
           
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div>
               <label className="cyber-label">TRIGGER_KEY</label>
-              <input className="cyber-input" placeholder="Ex: /ia-analise" value={shortcut} onChange={e => setShortcut(e.target.value)} />
+              <input className="cyber-input" placeholder="Ex: /bomdia" value={shortcut} onChange={e => setShortcut(e.target.value)} />
             </div>
             <div>
               <label className="cyber-label">CATEGORY</label>
@@ -158,14 +176,8 @@ export function CreateMacroModal({ isOpen, onClose, onSuccess, userId, macroToEd
               background: 'rgba(0, 0, 0, 0.3)', padding: '0.5rem', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.1)'
             }}>
               
-              {/* BOTÕES ESPECÍFICOS DE IA SE ESTIVER NO MODO IA */}
               {appCategory === 'AI' ? (
-                <ToolButton 
-                  label="{ SELECTION }" 
-                  icon="✨" 
-                  onClick={() => insertTag('{selection}')} 
-                  color="#a855f7" // Roxo AI
-                />
+                <ToolButton label="{ SELECTION }" icon="✨" onClick={() => insertTag('{selection}')} color="#a855f7" />
               ) : (
                 <>
                   <ToolButton label="CURSOR" icon="⌶" onClick={() => insertTag('[cursor]')} color="var(--neon-cyan)" />
@@ -176,10 +188,7 @@ export function CreateMacroModal({ isOpen, onClose, onSuccess, userId, macroToEd
               <div style={{ width: '1px', background: 'rgba(255,255,255,0.2)', margin: '0 0.2rem' }}></div>
               
               <ToolButton label="AGENTE" icon="🎧" onClick={() => insertTag('[agente]')} color="var(--neon-purple)" />
-              <ToolButton 
-                label="INPUT" 
-                icon="✍" 
-                onClick={() => {
+              <ToolButton label="INPUT" icon="✍" onClick={() => {
                   const tag = '[input:Título]';
                   if (textareaRef.current) {
                     const start = textareaRef.current.selectionStart;
@@ -265,36 +274,21 @@ export function CreateMacroModal({ isOpen, onClose, onSuccess, userId, macroToEd
 
 function ToolButton({ label, icon, onClick, color }: any) {
   const finalColor = color || 'var(--neon-cyan)';
-  
   return (
     <button 
       onClick={onClick}
       title={`Inserir ${label}`}
       style={{
-        background: `rgba(0,0,0,0.3)`, 
-        border: `1px solid ${finalColor}`,
-        color: finalColor,
-        borderRadius: '2px', 
-        padding: '6px 10px',
-        cursor: 'pointer',
-        fontFamily: 'JetBrains Mono',
-        fontSize: '0.7rem',
-        fontWeight: 'bold',
-        display: 'flex', alignItems: 'center', gap: '6px',
-        transition: 'all 0.2s',
-        boxShadow: `0 0 5px ${finalColor}20` 
+        background: `rgba(0,0,0,0.3)`, border: `1px solid ${finalColor}`, color: finalColor,
+        borderRadius: '2px', padding: '6px 10px', cursor: 'pointer',
+        fontFamily: 'JetBrains Mono', fontSize: '0.7rem', fontWeight: 'bold',
+        display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s', boxShadow: `0 0 5px ${finalColor}20` 
       }}
       onMouseEnter={(e) => {
-        const target = e.currentTarget as HTMLButtonElement;
-        target.style.background = finalColor;
-        target.style.color = '#000'; 
-        target.style.boxShadow = `0 0 15px ${finalColor}`;
+        const target = e.currentTarget as HTMLButtonElement; target.style.background = finalColor; target.style.color = '#000'; target.style.boxShadow = `0 0 15px ${finalColor}`;
       }}
       onMouseLeave={(e) => {
-        const target = e.currentTarget as HTMLButtonElement;
-        target.style.background = 'rgba(0,0,0,0.3)';
-        target.style.color = finalColor;
-        target.style.boxShadow = `0 0 5px ${finalColor}20`;
+        const target = e.currentTarget as HTMLButtonElement; target.style.background = 'rgba(0,0,0,0.3)'; target.style.color = finalColor; target.style.boxShadow = `0 0 5px ${finalColor}20`;
       }}
     >
       <span style={{ fontSize: '0.9rem' }}>{icon}</span>

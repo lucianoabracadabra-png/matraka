@@ -10,7 +10,8 @@ import { useToast } from './ToastContext';
 import type { Session } from '@supabase/supabase-js';
 import './index.css';
 
-interface Snippet { id: string; user_id: string; name: string; shortcut?: string; text?: string; app?: string; sourceFile: string; folderName: string; likes_count: number; liked_by_me: boolean; author: string; created_at: string; }
+// ADICIONADO: is_public
+interface Snippet { id: string; user_id: string; name: string; shortcut?: string; text?: string; app?: string; sourceFile: string; folderName: string; likes_count: number; liked_by_me: boolean; author: string; created_at: string; is_public: boolean; }
 interface Kit { id: string; name: string; }
 
 function App() {
@@ -32,7 +33,7 @@ function App() {
   const [myUsername, setMyUsername] = useState('Loading...');
   
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isProfileOpen, setIsProfileOpen] = useState(false); // <--- ESTADO DO MODAL DE PERFIL
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [macroToEdit, setMacroToEdit] = useState<Snippet | null>(null);
   const [isInputModalOpen, setIsInputModalOpen] = useState(false);
   const [varsToProcess, setVarsToProcess] = useState<string[]>([]);
@@ -94,7 +95,8 @@ function App() {
         likes_count: macro.macro_likes?.[0]?.count || 0,
         liked_by_me: myLikedIds.has(macro.id),
         author: macro.profiles?.username || macro.profiles?.email?.split('@')[0] || 'Unknown',
-        created_at: macro.created_at 
+        created_at: macro.created_at,
+        is_public: macro.is_public // <--- MAPEADO AQUI
       }));
       
       setAllSnippets(mappedSnippets);
@@ -139,10 +141,7 @@ function App() {
     }
   };
 
-  const isMacroInAnyKit = (macroId: string) => {
-    return Object.values(kitItems).some(set => set.has(macroId));
-  };
-
+  const isMacroInAnyKit = (macroId: string) => Object.values(kitItems).some(set => set.has(macroId));
   const getMacroKits = (macroId: string | null) => {
     if (!macroId) return [];
     return Object.keys(kitItems).filter(kitId => kitItems[kitId].has(macroId));
@@ -157,6 +156,10 @@ function App() {
       (snippet.text && snippet.text?.toLowerCase().includes(term)) ||
       (snippet.author && snippet.author.toLowerCase().includes(term))
     );
+
+    // REGRA DE PRIVACIDADE:
+    // Se a macro NÃO é minha E NÃO é pública -> Esconde (Filtragem de segurança de UI)
+    filtered = filtered.filter(s => s.user_id === session?.user.id || s.is_public);
 
     if (activeTab === 'MINE') filtered = filtered.filter(s => s.user_id === session?.user.id);
     else if (activeTab === 'FAVS') filtered = filtered.filter(s => s.liked_by_me);
@@ -209,10 +212,9 @@ function App() {
               <div>
                 <h1 className="title-glitch" data-text="MATRAKA" style={{ margin: 0, lineHeight: 1 }}>MATRAKA</h1>
                 
-                {/* ÁREA DE USUÁRIO ATUALIZADA: AGORA É CLICÁVEL */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '0.5rem' }}>
                     <button 
-                      onClick={() => setIsProfileOpen(true)} // <--- AÇÃO DE ABRIR MODAL
+                      onClick={() => setIsProfileOpen(true)}
                       className="user-btn"
                       title="Clique para editar Perfil"
                       style={{ 
@@ -299,7 +301,6 @@ function App() {
         ))}
 
         <CreateMacroModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={() => fetchMacros()} userId={session.user.id} macroToEdit={macroToEdit} />
-        {/* MODAL DE PERFIL: AGORA SERÁ ABERTO PELO BOTÃO NO HEADER */}
         <ProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} userId={session.user.id} onUpdate={() => { fetchUserProfile(session.user.id); fetchMacros(); }} />
         <InputVariableModal isOpen={isInputModalOpen} onClose={() => setIsInputModalOpen(false)} variables={varsToProcess} originalText={macroToProcess?.text || ''} />
         <AddToKitModal isOpen={isAddToKitOpen} onClose={() => { setIsAddToKitOpen(false); fetchMacros(); }} userId={session.user.id} macroId={macroIdToAdd} macroKits={getMacroKits(macroIdToAdd)} />
