@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from './supabaseClient';
-import { useToast } from './ToastContext'; // <--- Importamos o Hook
+import { useToast } from './ToastContext';
 
 interface Props {
   isOpen: boolean;
@@ -10,139 +10,170 @@ interface Props {
 }
 
 export function ProfileModal({ isOpen, onClose, userId, onUpdate }: Props) {
-  const { addToast } = useToast(); // <--- Usamos o Hook
+  const { addToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [username, setUsername] = useState('');
-  const [avatarUrl, setAvatarUrl] = useState('');
-  // Removi o estado 'msg', não precisamos mais dele
+  const [website, setWebsite] = useState('');
+  // Novo estado para a API Key
+  const [groqKey, setGroqKey] = useState('');
+  const [showKey, setShowKey] = useState(false);
 
   useEffect(() => {
-    if (isOpen) loadProfile();
+    if (isOpen) {
+      getProfile();
+    }
   }, [isOpen]);
 
-  const loadProfile = async () => {
+  const getProfile = async () => {
     try {
       setLoading(true);
-      const { data } = await supabase
+      // Agora buscamos também a groq_api_key
+      const { data, error, status } = await supabase
         .from('profiles')
-        .select('username, avatar_url')
+        .select('username, website, groq_api_key') 
         .eq('id', userId)
         .single();
 
+      if (error && status !== 406) {
+        throw error;
+      }
+
       if (data) {
         setUsername(data.username || '');
-        setAvatarUrl(data.avatar_url || '');
+        setWebsite(data.website || '');
+        setGroqKey(data.groq_api_key || '');
       }
-    } catch (error) {
-      console.warn('Profile load error', error);
-      // Não precisa de toast aqui para não spamar se for só um perfil novo
+    } catch (error: any) {
+      addToast('ERRO AO CARREGAR PERFIL', 'error');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSave = async (e: any) => {
-    e.preventDefault();
-    setLoading(true);
+  const updateProfile = async () => {
+    try {
+      setLoading(true);
+      const updates = {
+        id: userId,
+        username,
+        website,
+        groq_api_key: groqKey, // Salvando a chave
+        updated_at: new Date(),
+      };
 
-    const updates = {
-      id: userId,
-      username,
-      avatar_url: avatarUrl,
-      updated_at: new Date(),
-    };
+      const { error } = await supabase.from('profiles').upsert(updates);
 
-    const { error } = await supabase.from('profiles').upsert(updates);
-
-    if (error) {
-      addToast('ERRO AO ATUALIZAR: ' + error.message, 'error'); // <--- TOAST ERRO
-    } else {
-      addToast('IDENTIDADE ATUALIZADA COM SUCESSO', 'success'); // <--- TOAST SUCESSO
+      if (error) {
+        throw error;
+      }
+      addToast('PERFIL ATUALIZADO', 'success');
       onUpdate();
       onClose();
+    } catch (error: any) {
+      addToast('ERRO AO SALVAR', 'error');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   if (!isOpen) return null;
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 100,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      backdropFilter: 'blur(8px)', backgroundColor: 'rgba(5, 5, 10, 0.8)'
-    }}>
-      <div className="snippet-card" style={{ 
-        width: '100%', maxWidth: '450px', 
-        border: '1px solid var(--neon-cyan)',
-        boxShadow: '0 0 30px rgba(0, 243, 255, 0.15)',
-        position: 'relative',
-        background: '#05050a'
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', borderBottom: '1px solid var(--neon-cyan)', padding: '1rem' }}>
-          <h2 className="title" style={{ fontSize: '1.5rem', margin: 0, color: '#fff' }}>ID_CONFIGURATION</h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--neon-pink)', cursor: 'pointer', fontSize: '1.5rem' }}>[X]</button>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 250, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(5px)', backgroundColor: 'rgba(0, 0, 0, 0.7)' }}>
+      
+      {/* CSS LOCAL PARA O TOGGLE DE SENHA */}
+      <style>{`
+        .input-group-pass { position: relative; display: flex; align-items: center; }
+        .btn-eye {
+          position: absolute; right: 10px; background: transparent; border: none;
+          color: #666; cursor: pointer; transition: color 0.2s; display: flex;
+        }
+        .btn-eye:hover { color: var(--neon-cyan); }
+      `}</style>
+
+      <div className="cyber-modal" style={{ width: '90%', maxWidth: '500px', display: 'flex', flexDirection: 'column', '--modal-theme': 'var(--neon-cyan)' } as React.CSSProperties}>
+        
+        {/* HEADER */}
+        <div className="modal-header">
+          <div>
+            <span style={{ fontSize: '0.65rem', color: 'var(--neon-purple)', fontFamily: 'JetBrains Mono', display: 'block', marginBottom: '4px', letterSpacing:'1px' }}>USER_CONFIG</span>
+            <h2 className="title" style={{ fontSize: '1.5rem', margin: 0, color: '#fff' }}>EDIT_PROFILE</h2>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer', fontSize: '1.2rem' }}>✕</button>
         </div>
 
-        <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', padding: '0 1.5rem 1.5rem' }}>
+        {/* BODY */}
+        <div className="modal-body">
           
-          <div style={{ display: 'flex', justifyContent: 'center' }}>
-            <div style={{
-              width: '80px', height: '80px', borderRadius: '50%',
-              background: '#000', border: '2px solid var(--neon-purple)',
-              backgroundImage: avatarUrl ? `url(${avatarUrl})` : 'none',
-              backgroundSize: 'cover', backgroundPosition: 'center',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 0 15px var(--neon-purple)'
-            }}>
-              {!avatarUrl && <span style={{fontSize: '2rem', color: '#666'}}>?</span>}
+          <div>
+            <label className="input-label">CODENAME (USERNAME)</label>
+            <input 
+              className="cyber-field" 
+              value={username} 
+              onChange={(e) => setUsername(e.target.value)} 
+              placeholder="Digite seu usuário..."
+            />
+          </div>
+
+          <div>
+            <label className="input-label">WEBSITE / PORTFOLIO</label>
+            <input 
+              className="cyber-field" 
+              value={website} 
+              onChange={(e) => setWebsite(e.target.value)} 
+              placeholder="https://..."
+            />
+          </div>
+
+          {/* SESSÃO GROQ API KEY (SUBSTITUI O AVATAR) */}
+          <div style={{ padding: '15px', border: '1px dashed #333', background: 'rgba(255,0,255,0.03)', marginTop: '10px', borderRadius: '4px' }}>
+            <label className="input-label" style={{ color: 'var(--neon-pink)', display:'flex', justifyContent:'space-between' }}>
+              <span>GROQ_API_KEY (BYOK)</span>
+              <span style={{ fontSize:'0.6rem', opacity: 0.7 }}>REQUIRED FOR AI</span>
+            </label>
+            
+            <div className="input-group-pass">
+              <input 
+                type={showKey ? "text" : "password"}
+                className="cyber-field" 
+                value={groqKey} 
+                onChange={(e) => setGroqKey(e.target.value)} 
+                placeholder="gsk_..."
+                style={{ borderColor: 'var(--neon-pink)', color: '#fff' }}
+              />
+              <button 
+                className="btn-eye" 
+                onClick={() => setShowKey(!showKey)} 
+                title={showKey ? "Hide Key" : "Show Key"}
+                type="button"
+              >
+                {showKey ? (
+                  /* Icon Eye Off */
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+                ) : (
+                  /* Icon Eye */
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                )}
+              </button>
+            </div>
+            
+            <div style={{ marginTop: '8px', fontSize: '0.7rem', color: '#666', fontFamily: 'monospace', lineHeight: '1.4' }}>
+              <span style={{color:'var(--neon-pink)'}}>INFO:</span> Sua chave é armazenada no seu perfil pessoal. O sistema usa essa chave para gerar textos via IA Groq.
             </div>
           </div>
 
-          <div>
-            <label style={{ display: 'block', color: 'var(--neon-cyan)', fontSize: '0.8rem', fontFamily: 'JetBrains Mono', marginBottom: '0.5rem' }}>
-              CODENAME (USERNAME)
-            </label>
-            <input 
-              className="search-input" 
-              value={username} 
-              onChange={e => setUsername(e.target.value)} 
-              placeholder="Ex: Neo_The_One"
-              maxLength={20}
-              required
-            />
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
+            <button 
+              onClick={updateProfile} 
+              disabled={loading} 
+              className="cyber-btn-main" 
+              style={{ minWidth: '150px' }}
+            >
+              {loading ? 'SAVING...' : 'UPDATE_DATA'}
+            </button>
           </div>
 
-          <div>
-            <label style={{ display: 'block', color: 'var(--neon-purple)', fontSize: '0.8rem', fontFamily: 'JetBrains Mono', marginBottom: '0.5rem' }}>
-              AVATAR_SOURCE (URL)
-            </label>
-            <input 
-              className="search-input" 
-              value={avatarUrl} 
-              onChange={e => setAvatarUrl(e.target.value)} 
-              placeholder="https://..."
-              style={{ borderColor: 'var(--neon-purple)', color: 'var(--neon-purple)' }}
-            />
-          </div>
-
-          <button 
-            type="submit" 
-            disabled={loading}
-            className="btn-neon"
-            style={{
-              marginTop: '1rem',
-              background: loading ? 'transparent' : 'var(--neon-cyan)',
-              color: loading ? 'var(--neon-cyan)' : '#000',
-              padding: '1rem',
-              fontWeight: '800',
-              letterSpacing: '2px'
-            }}
-          >
-            {loading ? 'UPLOADING...' : 'UPDATE_IDENTITY'}
-          </button>
-
-        </form>
+        </div>
       </div>
     </div>
   );
