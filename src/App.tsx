@@ -54,6 +54,17 @@ function App() {
     return () => subscription.unsubscribe();
   }, []);
 
+// DEEP LINK: Verifica se a URL pede para abrir o perfil
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('profile') === 'true') {
+      setIsProfileOpen(true);
+      
+      // Opcional: Limpa a URL para não reabrir se o usuário der F5
+      // window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
+
   useEffect(() => {
     if (kitDeleteConfirm) {
       const timer = setTimeout(() => setKitDeleteConfirm(null), 3000);
