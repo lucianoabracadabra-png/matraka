@@ -468,3 +468,42 @@ body {
   background: rgba(255, 42, 42, 0.1);
   border-left-color: var(--neon-red);
 }
+/* --- TELA DE AUTENTICAÇÃO --- */
+.auth-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: var(--deep-void);
+  position: relative;
+  z-index: 10;
+}
+
+/* Abas de Login/Registro */
+.auth-tab {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 1rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: bold;
+  font-size: 0.9rem;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.3s;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.auth-tab:hover {
+  background: rgba(255,255,255,0.02);
+  color: #fff !important;
+}
+
+/* Aba Ativa (Login = Cyan, Register = Pink) */
+.auth-tab.active {
+  background: rgba(0,0,0,0.5);
+}
+/* A cor da borda/texto é controlada inline pelo React baseado no modo */
+.auth-tab:first-child.active { border-bottom-color: var(--neon-cyan); }
+.auth-tab:last-child.active { border-bottom-color: var(--neon-pink); }

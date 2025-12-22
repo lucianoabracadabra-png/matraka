@@ -5,72 +5,108 @@ import { useToast } from './ToastContext';
 export function Auth() {
   const { addToast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [mode, setMode] = useState<'LOGIN' | 'REGISTER'>('LOGIN');
+  
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    
-    if (!email) {
-      addToast('DIGITE UM EMAIL VÁLIDO', 'error');
-      setLoading(false);
-      return;
-    }
 
-    const { error } = await supabase.auth.signInWithOtp({ 
-      email,
-      options: {
-        emailRedirectTo: 'https://aegis-matraka.vercel.app/' 
+    try {
+      if (mode === 'REGISTER') {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+        });
+        if (error) throw error;
+        addToast('REGISTRO REALIZADO! VERIFIQUE SEU E-MAIL.', 'success');
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (error) throw error;
+        addToast('SYSTEM ACCESS GRANTED', 'success');
       }
-    });
-
-    if (error) {
-      addToast('ERRO NO LOGIN: ' + error.message, 'error');
-    } else {
-      addToast('LINK MÁGICO ENVIADO! VERIFIQUE SEU EMAIL.', 'success');
-      addToast('Aguardando confirmação...', 'info');
+    } catch (error: any) {
+      addToast(error.message || 'ERRO DE AUTENTICAÇÃO', 'error');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
+  const themeColor = mode === 'LOGIN' ? 'var(--neon-cyan)' : 'var(--neon-pink)';
+
   return (
-    <div className="auth-container" style={{
-      background: 'rgba(5, 5, 10, 0.9)',
-      padding: '2rem',
-      borderRadius: '8px',
-      border: '1px solid var(--neon-purple)',
-      boxShadow: '0 0 20px rgba(188, 19, 254, 0.2)',
-      textAlign: 'center',
-      maxWidth: '400px',
-      width: '100%'
-    }}>
-      <h1 className="title" style={{ marginBottom: '0.5rem' }}>MATRAKA</h1>
-      <p style={{ color: '#fff', fontFamily: 'JetBrains Mono', marginBottom: '2rem', fontSize: '0.9rem' }}>
-        SYSTEM.LOGIN_REQUIRED
-      </p>
-      
-      <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        <input
-          className="search-input"
-          type="email"
-          placeholder="SEU_EMAIL@CORP.COM"
-          value={email}
-          // A CORREÇÃO ESTÁ AQUI: Tipamos o evento 'e'
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
-          style={{ textAlign: 'center' }}
-        />
-        <button 
-          className="btn-neon" 
-          disabled={loading}
-          style={{ width: '100%', justifyContent: 'center', padding: '1rem' }}
-        >
-          {loading ? 'SENDING_LINK...' : 'SEND_MAGIC_LINK'}
-        </button>
-      </form>
-      
-      <p style={{ marginTop: '1.5rem', color: '#666', fontSize: '0.75rem', fontFamily: 'JetBrains Mono' }}>
-        * ACESSO RESTRITO A OPERADORES AUTORIZADOS
-      </p>
+    <div className="auth-wrapper">
+      <div className="cyber-modal" style={{ width: '400px', '--modal-theme': themeColor } as React.CSSProperties}>
+        
+        {/* HEADER */}
+        <div className="modal-header" style={{ justifyContent: 'center', flexDirection: 'column', gap: '10px', paddingBottom: '0' }}>
+          <h1 className="title-glitch" data-text="MATRAKA" style={{ fontSize: '2.5rem' }}>MATRAKA</h1>
+          <span style={{ fontFamily: 'JetBrains Mono', fontSize: '0.8rem', color: '#666', letterSpacing: '2px' }}>
+            SECURE_CONNECTION_V2.0
+          </span>
+        </div>
+
+        {/* TABS */}
+        <div className="auth-tabs" style={{ display: 'flex', marginTop: '1.5rem', borderBottom: '1px solid #333' }}>
+          <button 
+            onClick={() => setMode('LOGIN')}
+            className={`auth-tab ${mode === 'LOGIN' ? 'active' : ''}`}
+            style={{ color: mode === 'LOGIN' ? 'var(--neon-cyan)' : '#666' }}
+          >
+            SYSTEM_LOGIN
+          </button>
+          <button 
+            onClick={() => setMode('REGISTER')}
+            className={`auth-tab ${mode === 'REGISTER' ? 'active' : ''}`}
+            style={{ color: mode === 'REGISTER' ? 'var(--neon-pink)' : '#666' }}
+          >
+            NEW_USER
+          </button>
+        </div>
+
+        {/* BODY */}
+        <form onSubmit={handleAuth} className="modal-body" style={{ gap: '1.5rem' }}>
+          
+          <div>
+            <label className="input-label" style={{ color: themeColor }}>IDENTIFICATION (EMAIL)</label>
+            <input 
+              type="email" 
+              className="cyber-field" 
+              placeholder="user@matraka.system" 
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+
+          <div>
+            <label className="input-label" style={{ color: themeColor }}>ACCESS_KEY (PASSWORD)</label>
+            <input 
+              type="password" 
+              className="cyber-field" 
+              placeholder="••••••••" 
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+
+          <button 
+            type="submit" 
+            className="cyber-btn-main" 
+            disabled={loading}
+            style={{ marginTop: '1rem', background: themeColor }}
+          >
+            {loading ? 'PROCESSING...' : (mode === 'LOGIN' ? 'ENTER_SYSTEM' : 'CREATE_ID')}
+          </button>
+
+        </form>
+      </div>
     </div>
   );
 }
