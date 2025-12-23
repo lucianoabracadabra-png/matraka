@@ -1,26 +1,29 @@
 {
-  "short_name": "MATRAKA",
-  "name": "MATRAKA // V38",
+  "name": "MATRAKA",
   "icons": [
     {
-      "src": "icon64.png",
+      "src": "/icon16.png",
+      "sizes": "16x16",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon64.png",
       "sizes": "64x64",
       "type": "image/png"
     },
     {
-      "src": "icon128.png",
+      "src": "/icon128.png",
       "sizes": "128x128",
-      "type": "image/png"
-    },
-    {
-      "src": "icon128.png",
-      "sizes": "144x144",
-      "purpose": "any maskable",
       "type": "image/png"
     }
   ],
-  "start_url": ".",
+  "start_url": "/",
   "display": "standalone",
-  "theme_color": "#00f3ff",
-  "background_color": "#05050a"
+  "background_color": "#05050a",
+  "theme_color": "#00f3ff"
 }
