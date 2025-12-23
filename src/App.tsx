@@ -78,25 +78,26 @@ function App() {
   };
 
 const handleLogout = async () => {
-  try {
-    // 1. Kill-Session no Servidor (Invalida o token atual)
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    try {
+      // 1. Kill-Session no Servidor
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
 
-    // 2. Limpeza Local "Bruta" (Garante que o navegador esqueça tudo)
-    // Isso é o que a extensão faria para forçar a saída
-    localStorage.removeItem('sb-nvzdtryzpbrkvggjtbiy-auth-token'); 
+      // 2. Limpeza Local "Bruta" (Garante que o navegador esqueça tudo)
+      localStorage.removeItem('sb-nvzdtryzpbrkvggjtbiy-auth-token'); 
 
-    // 3. Atualiza o estado da aplicação para refletir a saída imediatamente
-    setSession(null);
-    
-    // Opcional: Redirecionar ou recarregar para limpar estados de memória
-    // window.location.href = '/'; 
+      // 3. Atualiza estado da aplicação
+      setSession(null);
+      setAllSnippets([]);
+      addToast('SYSTEM DISCONNECTED', 'info');
 
-  } catch (error) {
-    console.error("Erro ao fazer logout:", error.message);
-  }
-};
+    } catch (error: any) { // <--- A CORREÇÃO ESTÁ AQUI: (error: any)
+      console.error("Erro ao fazer logout:", error.message || error);
+      // Mesmo com erro, forçamos a limpeza visual
+      setSession(null);
+      setAllSnippets([]);
+    }
+  };
 
   const fetchMacros = useCallback(async () => {
     if (!session) return;
