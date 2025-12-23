@@ -4,23 +4,33 @@
   "description": "Sistema de Gestão de Macros Cyberpunk",
   "icons": [
     {
-      "src": "/icon32.png",
+      "src": "/app-icon16.png",
+      "sizes": "16x16",
+      "type": "image/png"
+    },
+    {
+      "src": "/app-icon32.png",
       "sizes": "32x32",
       "type": "image/png"
     },
     {
-      "src": "/icon128.png",
+      "src": "/app-icon64.png",
+      "sizes": "64x64",
+      "type": "image/png"
+    },
+    {
+      "src": "/app-icon128.png",
       "sizes": "128x128",
       "type": "image/png"
     },
     {
-      "src": "/icon128.png",
+      "src": "/app-icon128.png",
       "sizes": "144x144",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icon128.png",
+      "src": "/app-icon128.png",
       "sizes": "192x192",
       "type": "image/png"
     }
