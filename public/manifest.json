@@ -1,5 +1,6 @@
 {
   "name": "MATRAKA",
+  "short_name": "MATRAKA",
   "icons": [
     {
       "src": "/icon16.png",
@@ -10,20 +11,8 @@
       "src": "/icon32.png",
       "sizes": "32x32",
       "type": "image/png"
-    },
-    {
-      "src": "/icon64.png",
-      "sizes": "64x64",
-      "type": "image/png"
-    },
-    {
-      "src": "/icon128.png",
-      "sizes": "128x128",
-      "type": "image/png"
     }
   ],
   "start_url": "/",
-  "display": "standalone",
-  "background_color": "#05050a",
-  "theme_color": "#00f3ff"
+  "display": "standalone"
 }
